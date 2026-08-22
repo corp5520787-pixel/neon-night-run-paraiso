@@ -1,0 +1,6 @@
+{
+  "name": "Neon Night Run Paraíso",
+  "description": "Sitio web oficial, sistema de inscripciones individuales/grupales, pagos con Mercado Pago/transferencia, folios con QR y panel administrativo para la carrera nocturna Neon Night Run Paraíso.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
