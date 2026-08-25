@@ -40,6 +40,16 @@ export interface AmbassadorCode {
   createdAt: string;
 }
 
+export interface Sponsor {
+  id: string;
+  name: string;
+  tier: 'Diamante' | 'Oro' | 'Plata' | 'Institucional' | 'Oficial';
+  logoUrl?: string;
+  websiteUrl?: string;
+  active: boolean;
+  order?: number;
+}
+
 export interface EventConfig {
   id: string;
   name: string;
@@ -93,12 +103,7 @@ export interface EventConfig {
     description: string;
     highlight: string;
   }[];
-  sponsors: {
-    id: string;
-    name: string;
-    tier: 'Diamante' | 'Oro' | 'Plata' | 'Institucional';
-    logoUrl?: string;
-  }[];
+  sponsors: Sponsor[];
   faqs: {
     id: string;
     question: string;

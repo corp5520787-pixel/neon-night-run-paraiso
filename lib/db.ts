@@ -10,6 +10,7 @@ import {
   AdminUser,
   PaymentStatus,
   ParticipantInput,
+  Sponsor,
 } from './types';
 import { generateParticipantToken, generateQRCodeDataUrl } from './qr';
 
@@ -33,67 +34,40 @@ export const defaultEventConfig: EventConfig = {
   contactWhatsapp: '+52 993 123 4567',
   contactEmail: 'contacto@neonnightrunparaiso.com',
   bankDetails: {
-    bankName: 'BBVA México',
-    accountHolder: 'Neon Night Run Producciones S.A. de C.V.',
-    clabe: '012790001234567890',
-    accountNumber: '1234567890',
-    paymentConceptPrefix: 'NNR-',
-    instructions: 'Transfiere el monto exacto antes de 24 horas usando tu número de orden como concepto de pago. Sube tu comprobante o envíalo por WhatsApp.',
+    bankName: 'Transferencia SPEI',
+    accountHolder: 'Night run Paraíso',
+    clabe: '646180402345488997',
+    accountNumber: '402345488997',
+    paymentConceptPrefix: 'Tu Nombre',
+    instructions: 'Transfiere el monto exacto antes de 24 horas usando tu nombre como concepto de pago. Envía tu comprobante por WhatsApp para validar tu registro.',
   },
   kitItems: [
     {
       id: 'kit-1',
       title: 'Playera Conmemorativa Oficial',
-      description: 'Tejido técnico dry-fit ultraligero con serigrafía reflectante y pigmentos neón reactivos a luz UV.',
+      description: 'Playera técnica oficial conmemorativa de la carrera.',
       icon: 'Shirt',
-      provisionalNote: 'Diseño final sujeto a presentación oficial en conferencia de prensa.',
     },
     {
       id: 'kit-2',
-      title: 'Medalla de Finalista Glow in the Dark',
-      description: 'Troquelada en aleación de zinc de 85mm con esmalte que brilla en la oscuridad y listón sublimado.',
+      title: 'Medalla de Finalista',
+      description: 'Medalla conmemorativa oficial de finalista.',
       icon: 'Award',
-      provisionalNote: 'Diseño provisional conmemorativo 1ª Edición.',
     },
     {
       id: 'kit-3',
       title: 'Número de Corredor Oficial',
-      description: 'Impreso en tyvek resistente al agua con código QR de verificación y datos de emergencia.',
+      description: 'Número oficial de competidor para cronometraje y registro.',
       icon: 'Ticket',
-    },
-    {
-      id: 'kit-4',
-      title: 'Kit de Iluminación Neón',
-      description: 'Pulseras glow-stick de larga duración, pintura corporal neón no tóxica y lentes luminosos.',
-      icon: 'Sparkles',
-    },
-    {
-      id: 'kit-5',
-      title: 'Hidratación y Recuperación',
-      description: 'Abastecimiento en ruta (Km 2, 4 y Meta) con isotónico, agua purificada y fruta de recuperación.',
-      icon: 'Droplets',
-    },
-    {
-      id: 'kit-6',
-      title: 'Fotografía Digital Oficial',
-      description: 'Descarga gratuita de fotografías en alta resolución tomadas en las zonas de luz negra.',
-      icon: 'Camera',
     },
   ],
   categories: [
-    { id: 'cat-1', name: 'Libre Femenil (18 a 39 años)', ageRange: '18 - 39', gender: 'Femenil', type: 'Competitiva' },
-    { id: 'cat-2', name: 'Libre Varonil (18 a 39 años)', ageRange: '18 - 39', gender: 'Varonil', type: 'Competitiva' },
-    { id: 'cat-3', name: 'Master Femenil (40 años y más)', ageRange: '40+', gender: 'Femenil', type: 'Competitiva' },
-    { id: 'cat-4', name: 'Master Varonil (40 años y más)', ageRange: '40+', gender: 'Varonil', type: 'Competitiva' },
-    { id: 'cat-5', name: 'Juvenil Mixto (14 a 17 años)', ageRange: '14 - 17', gender: 'Mixto', type: 'Competitiva' },
-    { id: 'cat-6', name: 'Neon Glow Recreativa (Cualquier edad)', ageRange: 'Todas', gender: 'Mixto', type: 'Recreativa' },
+    { id: 'cat-1', name: 'Varonil', ageRange: '18 años en adelante', gender: 'Varonil', type: 'Competitiva' },
+    { id: 'cat-2', name: 'Femenil', ageRange: '18 años en adelante', gender: 'Femenil', type: 'Competitiva' },
   ],
   prizes: [
-    { category: 'Libre Varonil (6K)', firstPlace: '$5,000 MXN + Trofeo Neón', secondPlace: '$3,000 MXN + Trofeo', thirdPlace: '$1,500 MXN + Trofeo', provisional: true },
-    { category: 'Libre Femenil (6K)', firstPlace: '$5,000 MXN + Trofeo Neón', secondPlace: '$3,000 MXN + Trofeo', thirdPlace: '$1,500 MXN + Trofeo', provisional: true },
-    { category: 'Master Varonil (6K)', firstPlace: '$3,000 MXN + Trofeo', secondPlace: '$2,000 MXN + Trofeo', thirdPlace: '$1,000 MXN + Trofeo', provisional: true },
-    { category: 'Master Femenil (6K)', firstPlace: '$3,000 MXN + Trofeo', secondPlace: '$2,000 MXN + Trofeo', thirdPlace: '$1,000 MXN + Trofeo', provisional: true },
-    { category: 'Juvenil Mixto (6K)', firstPlace: 'Kit Deportivo + Trofeo', secondPlace: 'Kit Deportivo + Trofeo', thirdPlace: 'Kit Deportivo + Trofeo', provisional: true },
+    { category: 'Categoría Varonil (6K)', firstPlace: '$5,000 MXN + Trofeo Neón', secondPlace: '$3,000 MXN + Trofeo', thirdPlace: '$1,500 MXN + Trofeo', provisional: true },
+    { category: 'Categoría Femenil (6K)', firstPlace: '$5,000 MXN + Trofeo Neón', secondPlace: '$3,000 MXN + Trofeo', thirdPlace: '$1,500 MXN + Trofeo', provisional: true },
   ],
   routePoints: [
     { name: 'Arco de Salida Neón (Km 0)', kilometer: '0.0 KM', description: 'Túnel de luz negra, DJ en vivo y lluvia de humo neón.', highlight: 'Salida espectacular con cuenta regresiva lumínica' },
@@ -103,18 +77,66 @@ export const defaultEventConfig: EventConfig = {
     { name: 'Meta y Fiesta Neón (Km 6.0)', kilometer: '6.0 KM', description: 'Arco monumental de meta, entrega de medalla glow y After-Party con DJ.', highlight: 'Concierto y premiación en vivo' },
   ],
   sponsors: [
-    { id: 'sp-1', name: 'Gobierno Municipal de Paraíso', tier: 'Institucional' },
-    { id: 'sp-2', name: 'Instituto de la Juventud y el Deporte de Tabasco', tier: 'Institucional' },
-    { id: 'sp-3', name: 'Electrolit México', tier: 'Diamante' },
-    { id: 'sp-4', name: 'Glow Life Sportswear', tier: 'Oro' },
-    { id: 'sp-5', name: 'Hotel Costa del Sol Paraíso', tier: 'Plata' },
-    { id: 'sp-6', name: 'Radio Sureste 98.1 FM', tier: 'Plata' },
+    {
+      id: 'sp-1',
+      name: 'Intel',
+      tier: 'Diamante',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Intel_logo_%282020%29.svg/800px-Intel_logo_%282020%29.svg.png',
+      websiteUrl: 'https://www.intel.com',
+      active: true,
+      order: 1,
+    },
+    {
+      id: 'sp-2',
+      name: 'Walmart',
+      tier: 'Diamante',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/800px-Walmart_logo.svg.png',
+      websiteUrl: 'https://www.walmart.com.mx',
+      active: true,
+      order: 2,
+    },
+    {
+      id: 'sp-3',
+      name: 'Burger King',
+      tier: 'Oro',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Burger_King_logo_%281999%29.svg/800px-Burger_King_logo_%281999%29.svg.png',
+      websiteUrl: 'https://www.burgerking.com.mx',
+      active: true,
+      order: 3,
+    },
+    {
+      id: 'sp-4',
+      name: 'Forbes',
+      tier: 'Oficial',
+      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Forbes_logo.svg/800px-Forbes_logo.svg.png',
+      websiteUrl: 'https://forbes.com.mx',
+      active: true,
+      order: 4,
+    },
+    {
+      id: 'sp-5',
+      name: 'Electrolit',
+      tier: 'Diamante',
+      logoUrl: 'https://electrolit.com.mx/assets/img/logo-electrolit.png',
+      websiteUrl: 'https://electrolit.com.mx',
+      active: true,
+      order: 5,
+    },
+    {
+      id: 'sp-6',
+      name: 'Glow Life Paraíso',
+      tier: 'Oro',
+      logoUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400',
+      websiteUrl: 'https://paraiso.gob.mx',
+      active: true,
+      order: 6,
+    },
   ],
   faqs: [
     {
       id: 'faq-1',
-      question: '¿Qué incluye la inscripción?',
-      answer: 'Tu inscripción incluye playera técnica conmemorativa neón, medalla de finalista glow, número oficial de corredor con QR, kit de iluminación glow, hidratación en ruta y meta, paquete fotográfico digital y acceso a la Fiesta Neón After-Party.',
+      question: '¿Qué incluye el costo de inscripción de $350 MXN?',
+      answer: 'Tu inscripción incluye: Playera oficial conmemorativa, Medalla de finalista y Número oficial de corredor.',
       category: 'Inscripción',
     },
     {
@@ -162,7 +184,7 @@ export const defaultPricingStages: PricingStage[] = [
     soldCount: 100,
     active: true,
     badgeText: 'Tarifa Única Vigente',
-    description: 'Boleto oficial 6K + Kit completo con playera técnica, medalla glow, número con chip y fiesta neón.',
+    description: 'Incluye playera, medalla y número oficial de corredor.',
   },
 ];
 
@@ -503,6 +525,83 @@ export function updateEventConfig(newConfig: Partial<EventConfig>, userEmail = '
   db.config = { ...db.config, ...newConfig };
   recordAuditLog('CONFIG_UPDATED', 'config', db.config.id, userEmail, 'admin', 'Configuración general del evento actualizada');
   return db.config;
+}
+
+// --------------------------------------------------------------------------
+// SPONSORS SERVICES
+// --------------------------------------------------------------------------
+
+export function getSponsors(activeOnly = false): Sponsor[] {
+  const db = getDB();
+  const list = db.config.sponsors || [];
+  const sorted = [...list].sort((a, b) => (a.order || 0) - (b.order || 0));
+  if (activeOnly) {
+    return sorted.filter(s => s.active !== false);
+  }
+  return sorted;
+}
+
+export function createSponsor(
+  sponsorData: Omit<Sponsor, 'id'>,
+  adminEmail = 'admin@neonnightrunparaiso.mx'
+): Sponsor {
+  const db = getDB();
+  if (!db.config.sponsors) db.config.sponsors = [];
+  const id = `sp-${Date.now()}`;
+  const newSponsor: Sponsor = {
+    ...sponsorData,
+    id,
+    active: sponsorData.active !== undefined ? sponsorData.active : true,
+    order: sponsorData.order !== undefined ? sponsorData.order : db.config.sponsors.length + 1,
+  };
+  db.config.sponsors.push(newSponsor);
+  recordAuditLog(
+    'SPONSOR_CREATED',
+    'config',
+    id,
+    adminEmail,
+    'admin',
+    `Nuevo patrocinador agregado: ${newSponsor.name} (${newSponsor.tier})`
+  );
+  return newSponsor;
+}
+
+export function updateSponsor(
+  id: string,
+  updates: Partial<Sponsor>,
+  adminEmail = 'admin@neonnightrunparaiso.mx'
+): Sponsor | null {
+  const db = getDB();
+  if (!db.config.sponsors) return null;
+  const index = db.config.sponsors.findIndex(s => s.id === id);
+  if (index === -1) return null;
+  db.config.sponsors[index] = { ...db.config.sponsors[index], ...updates };
+  recordAuditLog(
+    'SPONSOR_UPDATED',
+    'config',
+    id,
+    adminEmail,
+    'admin',
+    `Patrocinador ${db.config.sponsors[index].name} actualizado`
+  );
+  return db.config.sponsors[index];
+}
+
+export function deleteSponsor(id: string, adminEmail = 'admin@neonnightrunparaiso.mx'): boolean {
+  const db = getDB();
+  if (!db.config.sponsors) return false;
+  const index = db.config.sponsors.findIndex(s => s.id === id);
+  if (index === -1) return false;
+  const deleted = db.config.sponsors.splice(index, 1)[0];
+  recordAuditLog(
+    'SPONSOR_DELETED',
+    'config',
+    id,
+    adminEmail,
+    'admin',
+    `Patrocinador eliminado: ${deleted.name}`
+  );
+  return true;
 }
 
 export function getPricingStages(): PricingStage[] {

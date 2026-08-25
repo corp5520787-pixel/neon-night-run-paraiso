@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CountdownTimer from '@/components/CountdownTimer';
 import StickyMobileBar from '@/components/StickyMobileBar';
+import SponsorSlider from '@/components/SponsorSlider';
 import {
   Sparkles,
   Ticket,
@@ -118,7 +119,7 @@ export default function HomePage() {
                 </span>
               </div>
               <span className="text-xl sm:text-2xl font-black text-yellow-400 font-mono">
-                ${activeStage?.price || 450} MXN
+                ${activeStage?.price || 350} MXN
               </span>
             </div>
 
@@ -205,6 +206,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ---------------------------------------------------------------------- */}
+      {/* PATROCINADORES Y MARCAS ALIADAS (SLIDER AUTOMÁTICO) */}
+      {/* ---------------------------------------------------------------------- */}
+      <SponsorSlider initialSponsors={config.sponsors} />
 
       {/* ---------------------------------------------------------------------- */}
       {/* 3. EXPERIENCIA NOCTURNA */}
@@ -420,10 +426,10 @@ export default function HomePage() {
             </div>
 
             <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-2">
-              Boleto Corredor 6K + Kit Completo
+              Boleto Corredor 6K
             </h3>
-            <p className="text-sm text-slate-300 max-w-md mx-auto mb-6">
-              Incluye playera técnica oficial dry-fit, medalla glow in the dark, número de competidor con chip, kit luminoso neón e hidratación.
+            <p className="text-sm text-cyan-300 font-semibold max-w-md mx-auto mb-6">
+              Incluye: Playera, medalla y número oficial de corredor.
             </p>
 
             <div className="text-5xl sm:text-6xl font-black text-white font-mono my-4 flex items-center justify-center gap-2">
@@ -455,23 +461,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Group / Multi-runner Reminder */}
-        <div className="bg-gradient-to-r from-fuchsia-950/80 via-slate-900 to-cyan-950/80 border border-fuchsia-500/40 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 glow-magenta">
+        {/* Fast Registration Reminder */}
+        <div className="bg-gradient-to-r from-cyan-950/80 via-slate-900 to-fuchsia-950/80 border border-cyan-500/40 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 glow-cyan">
           <div className="space-y-2">
-            <span className="px-3 py-1 rounded-full text-xs font-black bg-fuchsia-500 text-slate-950 uppercase tracking-wider">
-              ¿Inscribirás a familiares, amigos o equipo?
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-cyan-400 text-slate-950 uppercase tracking-wider">
+              Inscripción Rápida en Línea
             </span>
-            <h3 className="text-2xl font-black text-white">Registro Múltiple Centralizado (1 a 10 Corredores)</h3>
+            <h3 className="text-2xl font-black text-white">Registro 100% Individual y Directo</h3>
             <p className="text-slate-300 text-sm max-w-2xl">
-              Puedes registrar hasta 10 corredores en un solo pedido seleccionando la talla individual de cada uno y realizar un único pago fácil con confirmación inmediata.
+              Llena tus datos en menos de 2 minutos, asegura tu kit oficial con playera a tu medida y obtén tu folio oficial con número de referencia para transferencia SPEI.
             </p>
           </div>
 
           <Link
-            href="/registro?qty=5"
-            className="px-6 py-3.5 bg-fuchsia-500 hover:bg-fuchsia-400 text-slate-950 font-black text-sm rounded-xl shrink-0 transition-all shadow-lg"
+            href="/registro"
+            className="px-6 py-3.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 hover:from-cyan-300 hover:to-fuchsia-400 text-slate-950 font-black text-sm rounded-xl shrink-0 transition-all shadow-lg flex items-center gap-2"
           >
-            Registrar Grupo
+            <Ticket className="w-4 h-4 text-slate-950" />
+            <span>Inscribirme Ahora</span>
           </Link>
         </div>
       </section>
@@ -688,27 +695,7 @@ export default function HomePage() {
       </section>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* 9. PATROCINADORES Y ALIADOS */}
-      {/* ---------------------------------------------------------------------- */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
-          Patrocinadores e Instituciones Aliadas
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {config.sponsors.map(sp => (
-            <div
-              key={sp.id}
-              className="bg-[#0b1120] border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center h-24 hover:border-cyan-500/40 transition-colors"
-            >
-              <div className="font-extrabold text-xs sm:text-sm text-slate-200">{sp.name}</div>
-              <div className="text-[10px] text-cyan-400 font-semibold uppercase mt-1">{sp.tier}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* 10. PREGUNTAS FRECUENTES (FAQ) */}
+      {/* PREGUNTAS FRECUENTES (FAQ) */}
       {/* ---------------------------------------------------------------------- */}
       <section id="faq" className="py-20 bg-[#090e1a] border-y border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

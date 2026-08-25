@@ -18,6 +18,12 @@ import {
   ShieldCheck,
   X,
   Loader2,
+  UserPlus,
+  Building2,
+  Sparkles,
+  Ticket,
+  QrCode,
+  Banknote,
 } from 'lucide-react';
 import { Participant, ShirtSize } from '@/lib/types';
 
@@ -34,13 +40,23 @@ export default function AdminParticipantesPage() {
   const [showCourtesyModal, setShowCourtesyModal] = useState(false);
   const [submittingModal, setSubmittingModal] = useState(false);
 
-  // Courtesy form
-  const [courtesyName, setCourtesyName] = useState('');
-  const [courtesyEmail, setCourtesyEmail] = useState('');
-  const [courtesyPhone, setCourtesyPhone] = useState('');
-  const [courtesyCategory, setCourtesyCategory] = useState('Libre Varonil (18 a 39 años)');
-  const [courtesySize, setCourtesySize] = useState<ShirtSize>('M');
-  const [courtesyClub, setCourtesyClub] = useState('Cortesía Especial');
+  // Manual / Courtesy form states
+  const [showManualModal, setShowManualModal] = useState(false);
+  const [manualName, setManualName] = useState('');
+  const [manualBirthDate, setManualBirthDate] = useState('1996-05-15');
+  const [manualGender, setManualGender] = useState<'Varonil' | 'Femenil'>('Varonil');
+  const [manualCategory, setManualCategory] = useState('Varonil');
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualPhone, setManualPhone] = useState('');
+  const [manualCity, setManualCity] = useState('Paraíso');
+  const [manualState, setManualState] = useState('Tabasco');
+  const [manualSize, setManualSize] = useState<ShirtSize>('M');
+  const [manualEmergencyContact, setManualEmergencyContact] = useState('');
+  const [manualEmergencyPhone, setManualEmergencyPhone] = useState('');
+  const [manualClub, setManualClub] = useState('');
+  const [manualPaymentType, setManualPaymentType] = useState<'cash' | 'transfer' | 'courtesy' | 'pending'>('cash');
+  const [modalSuccessMsg, setModalSuccessMsg] = useState<string | null>(null);
+  const [modalErrorMsg, setModalErrorMsg] = useState<string | null>(null);
 
   const fetchParticipants = async () => {
     setLoading(true);
@@ -165,31 +181,54 @@ export default function AdminParticipantesPage() {
     }
   };
 
-  // Handle Create Courtesy
-  const handleCreateCourtesy = async (e: React.FormEvent) => {
+  // Helper to compute age from birthdate
+  const computeAge = (birthDateString: string): number => {
+    if (!birthDateString) return 25;
+    const today = new Date();
+    const birth = new Date(birthDateString);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+    return Math.max(1, age);
+  };
+
+  // Handle Create Manual / Presencial Participant
+  const handleCreateManualParticipant = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingModal(true);
+    setModalErrorMsg(null);
+    setModalSuccessMsg(null);
+
     try {
+      if (!manualName.trim() || !manualEmail.trim() || !manualPhone.trim()) {
+        throw new Error('Nombre completo, correo y teléfono son obligatorios.');
+      }
+
+      const age = computeAge(manualBirthDate);
+      const isApprovedDirectly = manualPaymentType === 'cash' || manualPaymentType === 'courtesy' || manualPaymentType === 'transfer';
+
       const payload = {
-        customerName: courtesyName,
-        customerEmail: courtesyEmail,
-        customerPhone: courtesyPhone,
-        paymentMethod: 'demo',
+        customerName: manualName.trim(),
+        customerEmail: manualEmail.trim(),
+        customerPhone: manualPhone.trim(),
+        paymentMethod: manualPaymentType === 'courtesy' ? 'demo' : 'transfer',
         participants: [
           {
-            fullName: courtesyName,
-            birthDate: '1995-01-01',
-            age: 31,
-            gender: 'Varonil',
-            category: courtesyCategory,
-            email: courtesyEmail,
-            phone: courtesyPhone,
-            city: 'Paraíso',
-            state: 'Tabasco',
-            emergencyContact: 'Comité Organizador',
-            emergencyPhone: courtesyPhone,
-            shirtSize: courtesySize,
-            clubOrTeam: courtesyClub,
+            fullName: manualName.trim(),
+            birthDate: manualBirthDate,
+            age,
+            gender: manualGender,
+            category: manualCategory,
+            email: manualEmail.trim(),
+            phone: manualPhone.trim(),
+            city: manualCity.trim() || 'Paraíso',
+            state: manualState.trim() || 'Tabasco',
+            emergencyContact: manualEmergencyContact.trim() || 'Contacto de Emergencia',
+            emergencyPhone: manualEmergencyPhone.trim() || manualPhone.trim(),
+            shirtSize: manualSize,
+            clubOrTeam: manualClub.trim() || undefined,
             waiverAccepted: true,
             privacyAccepted: true,
           },
@@ -202,15 +241,40 @@ export default function AdminParticipantesPage() {
         body: JSON.stringify(payload),
       });
 
-      if (res.ok) {
-        setShowCourtesyModal(false);
-        setCourtesyName('');
-        setCourtesyEmail('');
-        setCourtesyPhone('');
-        fetchParticipants();
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Error al registrar participante.');
       }
-    } catch (err) {
-      console.error('Error creating courtesy:', err);
+
+      const createdOrder = data.data.order;
+      const createdRunner = data.data.participants?.[0];
+
+      // If approved directly (cash or direct transfer or courtesy), ensure status is approved in the database
+      if (isApprovedDirectly && createdOrder && createdOrder.paymentStatus !== 'approved') {
+        await fetch(`/api/orders/${createdOrder.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentStatus: 'approved' }),
+        });
+      }
+
+      setModalSuccessMsg(`¡Participante registrado exitosamente! Folio: ${createdRunner?.folio || 'Asignado'}`);
+      
+      // Reset form
+      setTimeout(() => {
+        setShowManualModal(false);
+        setManualName('');
+        setManualEmail('');
+        setManualPhone('');
+        setManualEmergencyContact('');
+        setManualEmergencyPhone('');
+        setManualClub('');
+        setModalSuccessMsg(null);
+        fetchParticipants();
+      }, 1200);
+
+    } catch (err: any) {
+      setModalErrorMsg(err.message || 'Error al registrar participante');
     } finally {
       setSubmittingModal(false);
     }
@@ -247,11 +311,11 @@ export default function AdminParticipantesPage() {
             <span>Exportar CSV</span>
           </button>
           <button
-            onClick={() => setShowCourtesyModal(true)}
-            className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 rounded-xl text-xs font-black flex items-center gap-1.5 transition-colors glow-cyan"
+            onClick={() => setShowManualModal(true)}
+            className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:from-cyan-400 hover:to-fuchsia-400 text-slate-950 rounded-xl text-xs font-black flex items-center gap-2 transition-all glow-cyan shadow-lg"
           >
-            <Plus className="w-4 h-4 text-slate-950" />
-            <span>Nueva Cortesía</span>
+            <UserPlus className="w-4 h-4 text-slate-950" />
+            <span>+ Registro Manual / Presencial</span>
           </button>
         </div>
       </div>
@@ -512,109 +576,311 @@ export default function AdminParticipantesPage() {
         </div>
       )}
 
-      {/* COURTESY PASS MODAL */}
-      {showCourtesyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0b1120] border border-cyan-500/40 rounded-3xl max-w-lg w-full p-6 text-slate-200 shadow-2xl">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Plus className="w-4 h-4 text-cyan-400" />
-                Registrar Pase de Cortesía (100% Bonificado)
-              </h3>
+      {/* MANUAL PARTICIPANT REGISTRATION MODAL */}
+      {showManualModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div className="bg-[#0b1120] border border-cyan-500/50 rounded-3xl max-w-2xl w-full p-6 text-slate-200 shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-800 sticky top-0 bg-[#0b1120] z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-tight">
+                    Registro Manual de Participante
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Módulo presencial, efectivo, cortesía oficial o transferencia confirmada
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setShowCourtesyModal(false)}
-                className="text-slate-400 hover:text-white"
+                onClick={() => {
+                  setShowManualModal(false);
+                  setModalErrorMsg(null);
+                  setModalSuccessMsg(null);
+                }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateCourtesy} className="py-4 space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1">Nombre Completo del Invitado *</label>
-                <input
-                  type="text"
-                  required
-                  value={courtesyName}
-                  onChange={e => setCourtesyName(e.target.value)}
-                  placeholder="Ej. Lic. Roberto Gómez (Prensa / Patrocinador)"
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
-                />
+            {modalErrorMsg && (
+              <div className="mt-4 p-3 bg-red-950/60 border border-red-500/40 rounded-xl text-xs text-red-300">
+                {modalErrorMsg}
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Correo Electrónico *</label>
-                  <input
-                    type="email"
-                    required
-                    value={courtesyEmail}
-                    onChange={e => setCourtesyEmail(e.target.value)}
-                    placeholder="invitado@correo.com"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 mb-1">Teléfono (WhatsApp) *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={courtesyPhone}
-                    onChange={e => setCourtesyPhone(e.target.value)}
-                    placeholder="993 123 4567"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
-                  />
-                </div>
+            {modalSuccessMsg && (
+              <div className="mt-4 p-3 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 font-bold">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>{modalSuccessMsg}</span>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-400 mb-1">Talla de Playera *</label>
-                  <select
-                    value={courtesySize}
-                    onChange={e => setCourtesySize(e.target.value as ShirtSize)}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+            <form onSubmit={handleCreateManualParticipant} className="py-4 space-y-4 text-xs">
+              {/* Payment & Registration Type */}
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2">
+                <label className="block text-cyan-400 font-bold uppercase tracking-wider text-[11px]">
+                  1. Modalidad de Pago / Origen del Registro
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setManualPaymentType('cash')}
+                    className={`p-2.5 rounded-xl border text-center font-bold flex flex-col items-center justify-center gap-1 transition-all ${
+                      manualPaymentType === 'cash'
+                        ? 'bg-emerald-950/70 border-emerald-500 text-emerald-300 shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
                   >
-                    <option value="XS">XS</option>
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                  </select>
+                    <Banknote className="w-4 h-4" />
+                    <span>Efectivo ($350)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setManualPaymentType('transfer')}
+                    className={`p-2.5 rounded-xl border text-center font-bold flex flex-col items-center justify-center gap-1 transition-all ${
+                      manualPaymentType === 'transfer'
+                        ? 'bg-cyan-950/70 border-cyan-500 text-cyan-300 shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <Building2 className="w-4 h-4" />
+                    <span>SPEI Confirmado</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setManualPaymentType('courtesy')}
+                    className={`p-2.5 rounded-xl border text-center font-bold flex flex-col items-center justify-center gap-1 transition-all ${
+                      manualPaymentType === 'courtesy'
+                        ? 'bg-fuchsia-950/70 border-fuchsia-500 text-fuchsia-300 shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Cortesía ($0)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setManualPaymentType('pending')}
+                    className={`p-2.5 rounded-xl border text-center font-bold flex flex-col items-center justify-center gap-1 transition-all ${
+                      manualPaymentType === 'pending'
+                        ? 'bg-yellow-950/70 border-yellow-500 text-yellow-300 shadow-md'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span>Pendiente Pago</span>
+                  </button>
                 </div>
+              </div>
+
+              {/* Personal Data */}
+              <div className="space-y-3">
+                <span className="block text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                  2. Datos del Corredor
+                </span>
+
                 <div>
-                  <label className="block text-slate-400 mb-1">Institución / Patrocinador</label>
+                  <label className="block text-slate-400 mb-1">Nombre Completo *</label>
                   <input
                     type="text"
-                    value={courtesyClub}
-                    onChange={e => setCourtesyClub(e.target.value)}
-                    placeholder="Ej. Municipio de Paraíso"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    required
+                    value={manualName}
+                    onChange={e => setManualName(e.target.value)}
+                    placeholder="Ej. Carlos Mendoza Domínguez"
+                    className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Correo Electrónico *</label>
+                    <input
+                      type="email"
+                      required
+                      value={manualEmail}
+                      onChange={e => setManualEmail(e.target.value)}
+                      placeholder="carlos@correo.com"
+                      className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Teléfono WhatsApp *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={manualPhone}
+                      onChange={e => setManualPhone(e.target.value)}
+                      placeholder="993 123 4567"
+                      className="w-full px-3 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Fecha de Nacimiento *</label>
+                    <input
+                      type="date"
+                      required
+                      value={manualBirthDate}
+                      onChange={e => setManualBirthDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1">Género *</label>
+                    <select
+                      value={manualGender}
+                      onChange={e => setManualGender(e.target.value as 'Varonil' | 'Femenil')}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    >
+                      <option value="Varonil">Varonil</option>
+                      <option value="Femenil">Femenil</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1">Talla de Playera *</label>
+                    <select
+                      value={manualSize}
+                      onChange={e => setManualSize(e.target.value as ShirtSize)}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-mono font-bold"
+                    >
+                      <option value="XS">XS (Extra Chica)</option>
+                      <option value="S">S (Chica)</option>
+                      <option value="M">M (Mediana)</option>
+                      <option value="L">L (Grande)</option>
+                      <option value="XL">XL (Extra Grande)</option>
+                      <option value="XXL">XXL (Doble Extra Grande)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Categoría Oficial *</label>
+                    <select
+                      value={manualCategory}
+                      onChange={e => {
+                        setManualCategory(e.target.value);
+                        if (e.target.value === 'Varonil' || e.target.value === 'Femenil') {
+                          setManualGender(e.target.value as 'Varonil' | 'Femenil');
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-semibold"
+                    >
+                      <option value="Varonil">Varonil (Única 6K)</option>
+                      <option value="Femenil">Femenil (Única 6K)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 mb-1">Club / Equipo / Patrocinador</label>
+                    <input
+                      type="text"
+                      value={manualClub}
+                      onChange={e => setManualClub(e.target.value)}
+                      placeholder="Ej. Paraíso Runners / Prensa"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Ciudad</label>
+                    <input
+                      type="text"
+                      value={manualCity}
+                      onChange={e => setManualCity(e.target.value)}
+                      placeholder="Paraíso"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Estado</label>
+                    <input
+                      type="text"
+                      value={manualState}
+                      onChange={e => setManualState(e.target.value)}
+                      placeholder="Tabasco"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 mb-1">Contacto de Emergencia</label>
+                    <input
+                      type="text"
+                      value={manualEmergencyContact}
+                      onChange={e => setManualEmergencyContact(e.target.value)}
+                      placeholder="Nombre del familiar"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-400 mb-1">Teléfono Emergencia</label>
+                    <input
+                      type="tel"
+                      value={manualEmergencyPhone}
+                      onChange={e => setManualEmergencyPhone(e.target.value)}
+                      placeholder="993 987 6543"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-800 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCourtesyModal(false)}
-                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingModal}
-                  className="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl hover:bg-cyan-400 flex items-center gap-1.5"
-                >
-                  {submittingModal ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+              <div className="pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
+                <div className="text-[11px] text-slate-400">
+                  {manualPaymentType !== 'pending' ? (
+                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Se activará folio oficial y código QR de inmediato.
+                    </span>
                   ) : (
-                    <ShieldCheck className="w-4 h-4 text-slate-950" />
+                    <span className="text-yellow-400 font-bold flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5" />
+                      Quedará registrado en espera de comprobante.
+                    </span>
                   )}
-                  <span>Generar Folio y Boleto QR</span>
-                </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowManualModal(false);
+                      setModalErrorMsg(null);
+                      setModalSuccessMsg(null);
+                    }}
+                    className="px-4 py-2.5 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingModal}
+                    className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-fuchsia-500 hover:from-cyan-400 hover:to-fuchsia-400 text-slate-950 font-black rounded-xl flex items-center gap-1.5 shadow-lg shadow-cyan-950"
+                  >
+                    {submittingModal ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    ) : (
+                      <QrCode className="w-4 h-4 text-slate-950" />
+                    )}
+                    <span>Registrar y Generar Folio</span>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

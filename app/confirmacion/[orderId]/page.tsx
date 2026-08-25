@@ -23,6 +23,10 @@ import {
   Shirt,
   User,
   Loader2,
+  Copy,
+  Check,
+  Send,
+  MessageCircle,
 } from 'lucide-react';
 import { Order, Participant } from '@/lib/types';
 
@@ -34,6 +38,42 @@ function ConfirmacionContent() {
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [copiedClabe, setCopiedClabe] = useState(false);
+  const [copiedOrderNumber, setCopiedOrderNumber] = useState(false);
+  const [receiptUrlInput, setReceiptUrlInput] = useState('');
+  const [savingReceipt, setSavingReceipt] = useState(false);
+  const [receiptSaved, setReceiptSaved] = useState(false);
+
+  const handleCopyClabe = (clabe: string) => {
+    navigator.clipboard.writeText(clabe);
+    setCopiedClabe(true);
+    setTimeout(() => setCopiedClabe(false), 2500);
+  };
+
+  const handleCopyOrderNumber = (ord: string) => {
+    navigator.clipboard.writeText(ord);
+    setCopiedOrderNumber(true);
+    setTimeout(() => setCopiedOrderNumber(false), 2500);
+  };
+
+  const handleSaveReceipt = async () => {
+    if (!orderId || !receiptUrlInput.trim()) return;
+    setSavingReceipt(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transferReceiptUrl: receiptUrlInput.trim() }),
+      });
+      if (res.ok) {
+        setReceiptSaved(true);
+      }
+    } catch (err) {
+      console.error('Error saving receipt:', err);
+    } finally {
+      setSavingReceipt(false);
+    }
+  };
 
   useEffect(() => {
     async function loadOrder() {
@@ -288,37 +328,109 @@ function ConfirmacionContent() {
 
         {/* BANK TRANSFER INSTRUCTIONS IF PENDING */}
         {isPendingTransfer && (
-          <div className="mt-8 bg-slate-900 border border-yellow-500/40 rounded-3xl p-6 sm:p-8 space-y-4">
-            <h3 className="text-lg font-bold text-yellow-300 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-yellow-400" />
-              Instrucciones para completar tu Pago SPEI
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-300">
-              Transfiere el monto exacto de <strong className="text-yellow-400 font-mono text-base">${order.totalAmount} MXN</strong> dentro de las próximas 24 horas usando los siguientes datos:
+          <div className="mt-8 bg-[#0b1120] border-2 border-yellow-500/50 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <h3 className="text-xl font-black text-yellow-300 flex items-center gap-2.5 uppercase tracking-wide">
+                <Building2 className="w-6 h-6 text-yellow-400" />
+                Instrucciones para Pago por Transferencia SPEI
+              </h3>
+              <span className="text-xs bg-yellow-950 text-yellow-300 border border-yellow-500/40 px-3 py-1 rounded-full font-bold self-start sm:self-auto">
+                Monto Exacto: ${order.totalAmount} MXN
+              </span>
+            </div>
+
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Para garantizar tu lugar y activar tus códigos QR oficiales, realiza tu transferencia bancaria dentro de las próximas <strong>24 horas</strong> con los siguientes datos:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-950 rounded-2xl border border-slate-800 text-xs">
-              <div>
-                <span className="text-slate-400 block">Banco Destino:</span>
-                <strong className="text-white text-sm">BBVA México</strong>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-slate-400 text-xs block">Banco / Modalidad:</span>
+                <strong className="text-white text-base">Cualquier banco vía SPEI</strong>
               </div>
-              <div>
-                <span className="text-slate-400 block">Beneficiario:</span>
-                <strong className="text-white text-sm">Neon Night Run Producciones S.A. de C.V.</strong>
+
+              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-1">
+                <span className="text-slate-400 text-xs block">Beneficiario:</span>
+                <strong className="text-white text-base">Night run Paraíso</strong>
               </div>
-              <div>
-                <span className="text-slate-400 block">CLABE Interbancaria:</span>
-                <strong className="text-cyan-300 font-mono text-sm">012790001234567890</strong>
+
+              {/* Copyable CLABE */}
+              <div className="p-4 bg-slate-950 rounded-2xl border border-cyan-500/40 flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-slate-400 text-xs block">CLABE Interbancaria (18 dígitos):</span>
+                  <strong className="text-cyan-300 font-mono text-base tracking-wider">646180402345488997</strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyClabe('646180402345488997')}
+                  className="px-3 py-1.5 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                >
+                  {copiedClabe ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>¡Copiada!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar</span>
+                    </>
+                  )}
+                </button>
               </div>
-              <div>
-                <span className="text-slate-400 block">Concepto de Pago (Indispensable):</span>
-                <strong className="text-yellow-400 font-mono text-sm">{order.orderNumber}</strong>
+
+              {/* Copyable Concept */}
+              <div className="p-4 bg-slate-950 rounded-2xl border border-yellow-500/40 flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-slate-400 text-xs block">Concepto de Transferencia:</span>
+                  <strong className="text-yellow-300 font-mono text-base tracking-wider">
+                    {order.customerName || 'Tu Nombre Completo'}
+                  </strong>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyOrderNumber(order.customerName || order.orderNumber)}
+                  className="px-3 py-1.5 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 border border-yellow-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                >
+                  {copiedOrderNumber ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>¡Copiado!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar</span>
+                    </>
+                  )}
+                </button>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400">
-              Una vez realizada tu transferencia, el administrador cotejará el folio de la orden con el estado de cuenta y recibirás tu confirmación activa por correo electrónico.
-            </p>
+            {/* ACTION: SEND VIA WHATSAPP */}
+            <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/80 to-slate-950 border border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-left space-y-1">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  ¿Ya realizaste tu transferencia?
+                </h4>
+                <p className="text-xs text-slate-300">
+                  Envíanos la captura de tu comprobante por WhatsApp para validar y activar tus pases de inmediato.
+                </p>
+              </div>
+
+              <a
+                href={`https://wa.me/529931234567?text=${encodeURIComponent(
+                  `Hola, adjunto mi comprobante de transferencia bancaria SPEI para la orden ${order.orderNumber} a nombre de ${order.customerName} por el total de $${order.totalAmount} MXN (Neon Night Run Paraíso 2026).`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl flex items-center gap-2 transition-all shrink-0 shadow-lg shadow-emerald-950"
+              >
+                <Send className="w-4 h-4 text-slate-950" />
+                <span>Enviar Comprobante por WhatsApp</span>
+              </a>
+            </div>
           </div>
         )}
       </main>
