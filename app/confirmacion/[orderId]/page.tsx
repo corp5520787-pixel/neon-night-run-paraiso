@@ -305,7 +305,7 @@ function ConfirmacionContent() {
                     <span className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded text-[11px] mt-0.5 ${
                       p.kitDelivered ? 'bg-emerald-950 text-emerald-400' : 'bg-slate-800 text-cyan-300'
                     }`}>
-                      {p.kitDelivered ? '✓ Kit Entregado' : 'Pendiente de entrega en parque'}
+                      {p.kitDelivered ? '✓ Kit Entregado' : 'Pendiente de entrega'}
                     </span>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ function ConfirmacionContent() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-fuchsia-400 shrink-0" />
-                  <span>Kits: Explanada del Parque Central (Nov 6 y 7)</span>
+                  <span>Kits: Lugar y horario por definir</span>
                 </div>
               </div>
             </div>

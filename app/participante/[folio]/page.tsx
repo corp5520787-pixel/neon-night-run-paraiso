@@ -178,7 +178,7 @@ export default function ParticipanteTicketPage() {
                 <span className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded text-[11px] mt-0.5 ${
                   participant.kitDelivered ? 'bg-emerald-950 text-emerald-400' : 'bg-slate-800 text-cyan-300'
                 }`}>
-                  {participant.kitDelivered ? '✓ Kit Entregado' : 'Pendiente en Parque Central'}
+                  {participant.kitDelivered ? '✓ Kit Entregado' : 'Pendiente de entrega'}
                 </span>
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function ParticipanteTicketPage() {
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-fuchsia-400 shrink-0" />
-              <span>Módulo de Kits: Parque Central (Nov 6 y 7)</span>
+              <span>Módulo de Kits: Lugar y horario por definir</span>
             </div>
           </div>
         </div>

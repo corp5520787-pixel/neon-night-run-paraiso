@@ -3,10 +3,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Neon Night Run Paraíso 2026 - Carrera Nocturna 6K',
-  description: 'Inscripciones abiertas para la carrera nocturna más vibrante de Tabasco. 6K con luces neón, música DJ en vivo, kit completo, cronometraje con chip y premios en efectivo.',
+  description: 'Inscripciones abiertas para la carrera nocturna más vibrante de Tabasco. 6K con luces neón, música DJ en vivo, kit completo, cronometraje con chip y premios en especie.',
   openGraph: {
     title: 'Neon Night Run Paraíso 2026 - Carrera Nocturna 6K',
-    description: 'Inscripciones abiertas para la carrera nocturna más vibrante de Tabasco. 6K con luces neón, música DJ en vivo, kit completo, cronometraje con chip y premios en efectivo.',
+    description: 'Inscripciones abiertas para la carrera nocturna más vibrante de Tabasco. 6K con luces neón, música DJ en vivo, kit completo, cronometraje con chip y premios en especie.',
     type: 'website',
   },
 };

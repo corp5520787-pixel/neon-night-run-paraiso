@@ -535,7 +535,7 @@ function RegistroForm() {
                 </div>
                 <div className="flex justify-between items-start gap-2">
                   <span>Concepto:</span>
-                  <span className="text-white font-medium text-right">1x Boleto 6K (Incluye playera, medalla y número)</span>
+                  <span className="text-white font-medium text-right">1x Boleto 6K (Incluye playera, medalla, Kit Neon y número)</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Subtotal:</span>

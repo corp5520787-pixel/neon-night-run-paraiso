@@ -37,7 +37,6 @@ export default function HomePage() {
   const [config, setConfig] = useState<EventConfig>(defaultEventConfig);
   const [stages, setStages] = useState<PricingStage[]>(defaultPricingStages);
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
-  const [activeFaqCategory, setActiveFaqCategory] = useState<string>('Todas');
 
   useEffect(() => {
     // Fetch live config & stages from API
@@ -65,11 +64,6 @@ export default function HomePage() {
   const activeStage = stages.find(s => s.active && s.id !== 'stage-team') || stages[1] || stages[0];
   const quotaPercent = Math.min(100, Math.round((config.currentTotalRegistered / config.maxTotalQuota) * 100));
   const spotsLeft = Math.max(0, config.maxTotalQuota - config.currentTotalRegistered);
-
-  const faqCategories = ['Todas', 'Inscripción', 'Kits', 'Logística', 'Evento', 'Pagos'];
-  const filteredFaqs = activeFaqCategory === 'Todas'
-    ? config.faqs
-    : config.faqs.filter(f => f.category === activeFaqCategory);
 
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
@@ -242,7 +236,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-800 text-xs font-semibold text-cyan-300">
-              5 puntos de animación lumínica
+              Puntos de hidratación ambientados he iluminación audiorítmica
             </div>
           </div>
 
@@ -270,7 +264,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-xl font-black text-white mb-3">Medalla Glow & After-Party</h3>
               <p className="text-slate-400 text-sm leading-relaxed">
-                Al cruzar la meta recibirás tu medalla conmemorativa que brilla en la oscuridad, hidratación fría y acceso exclusivo al concierto de clausura.
+                Al cruzar la meta recibirás tu medalla neon, hidratación fría y acceso exclusivo a rifa y sorteos post-carrera.
               </p>
             </div>
             <div className="mt-6 pt-4 border-t border-slate-800 text-xs font-semibold text-yellow-300">
@@ -429,7 +423,7 @@ export default function HomePage() {
               Boleto Corredor 6K
             </h3>
             <p className="text-sm text-cyan-300 font-semibold max-w-md mx-auto mb-6">
-              Incluye: Playera, medalla y número oficial de corredor.
+              Incluye: Playera, medalla, Kit Neon y número oficial de corredor.
             </p>
 
             <div className="text-5xl sm:text-6xl font-black text-white font-mono my-4 flex items-center justify-center gap-2">
@@ -460,27 +454,6 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-
-        {/* Fast Registration Reminder */}
-        <div className="bg-gradient-to-r from-cyan-950/80 via-slate-900 to-fuchsia-950/80 border border-cyan-500/40 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 glow-cyan">
-          <div className="space-y-2">
-            <span className="px-3 py-1 rounded-full text-xs font-black bg-cyan-400 text-slate-950 uppercase tracking-wider">
-              Inscripción Rápida en Línea
-            </span>
-            <h3 className="text-2xl font-black text-white">Registro 100% Individual y Directo</h3>
-            <p className="text-slate-300 text-sm max-w-2xl">
-              Llena tus datos en menos de 2 minutos, asegura tu kit oficial con playera a tu medida y obtén tu folio oficial con número de referencia para transferencia SPEI.
-            </p>
-          </div>
-
-          <Link
-            href="/registro"
-            className="px-6 py-3.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 hover:from-cyan-300 hover:to-fuchsia-400 text-slate-950 font-black text-sm rounded-xl shrink-0 transition-all shadow-lg flex items-center gap-2"
-          >
-            <Ticket className="w-4 h-4 text-slate-950" />
-            <span>Inscribirme Ahora</span>
-          </Link>
-        </div>
       </section>
 
       {/* ---------------------------------------------------------------------- */}
@@ -496,7 +469,7 @@ export default function HomePage() {
               CATEGORÍAS Y BOLSA DE PREMIACIÓN
             </h2>
             <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-              Trofeos conmemorativos luminosos y premios en efectivo para los primeros lugares de las ramas competitivas.
+              Premio en carrera recreativa en especie para los primeros lugares de las ramas varonil y femenil.
             </p>
           </div>
 
@@ -512,7 +485,7 @@ export default function HomePage() {
                   <div key={cat.id} className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between gap-4">
                     <div>
                       <div className="font-bold text-white text-sm sm:text-base">{cat.name}</div>
-                      <div className="text-xs text-slate-400">Rango: {cat.ageRange} años · Rama: {cat.gender}</div>
+                      <div className="text-xs text-slate-400">Rango: {cat.ageRange} · Rama: {cat.gender}</div>
                     </div>
                     <span className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider ${
                       cat.type === 'Competitiva'
@@ -534,7 +507,7 @@ export default function HomePage() {
                   Bolsa de Premios
                 </h3>
                 <span className="text-[11px] text-yellow-400 font-semibold bg-yellow-950/60 px-2 py-0.5 rounded">
-                  *Provisional sujeta a convocatoria oficial
+                  Premio en carrera recreativa en especie
                 </span>
               </div>
 
@@ -576,7 +549,7 @@ export default function HomePage() {
             CIRCUITO NOCTURNO 6K
           </h2>
           <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-            Recorrido plano, pavimentado y 100% resguardado que bordea el Malecón Turístico, zonas costeras y monumentos emblemáticos de Paraíso, Tabasco.
+            Recorrido plano, pavimentado y 100% resguardado que bordea el Malecón Turístico, Cangrejo y boulevard principal de paraíso, Hotel baez.
           </p>
         </div>
 
@@ -613,13 +586,13 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 mt-6 text-xs text-slate-300">
               <span className="flex items-center gap-1">
-                <Droplets className="w-4 h-4 text-cyan-400" /> 2 Puntos de Hidratación
+                <Droplets className="w-4 h-4 text-cyan-400" /> 1 Punto de Hidratación
               </span>
               <span className="flex items-center gap-1">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" /> Resguardo Vial Municipal
               </span>
               <span className="flex items-center gap-1">
-                <Music className="w-4 h-4 text-fuchsia-400" /> 3 Estaciones de DJ
+                <Music className="w-4 h-4 text-fuchsia-400" /> DJ en todo el recorrido
               </span>
             </div>
           </div>
@@ -632,30 +605,30 @@ export default function HomePage() {
       <section className="py-20 bg-[#090e1a] border-y border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Program De Cero a 6K */}
+            {/* Left: Program Powerfit */}
             <div className="space-y-6">
               <span className="text-xs font-extrabold text-yellow-400 uppercase tracking-widest bg-yellow-950/80 border border-yellow-500/30 px-3 py-1 rounded-full">
                 Preparación Deportiva
               </span>
               <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                PROGRAMA GRATUITO <br />
-                <span className="text-yellow-400">“DE CERO A 6K”</span>
+                ENTRÉNATE EN <br />
+                <span className="text-yellow-400">“POWERFIT”</span>
               </h2>
               <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                ¿Es tu primera carrera? Te acompañamos paso a paso con entrenamientos grupales nocturnos en Paraíso y planes de acondicionamiento físico de 6 semanas para llegar con tu mejor energía.
+                ¡Prepárate con todo para la carrera! Te invitamos a sumarte a los entrenamientos en <strong>Powerfit</strong>. Acércate y pregunta por el <strong>precio especial exclusivo</strong> para participantes de la Carrera Neón.
               </p>
 
               <div className="space-y-3">
                 <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
                   <Dumbbell className="w-5 h-5 text-cyan-400 shrink-0" />
                   <div className="text-xs sm:text-sm text-slate-300">
-                    <strong>Entrenamientos presenciales:</strong> Martes y Jueves a las 19:30 hrs en el Malecón.
+                    <strong>Acondicionamiento y fuerza:</strong> Entrenamientos funcionales y preparación física guiada en Powerfit.
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
-                  <Droplets className="w-5 h-5 text-fuchsia-400 shrink-0" />
+                  <Sparkles className="w-5 h-5 text-yellow-400 shrink-0" />
                   <div className="text-xs sm:text-sm text-slate-300">
-                    <strong>Guía de Hidratación:</strong> Consejos de nutrición e hidratación adaptados al clima nocturno de Tabasco.
+                    <strong>Precio especial para corredores:</strong> Menciona que eres participante de la Neon Night Run para acceder a tu tarifa preferencial.
                   </div>
                 </div>
               </div>
@@ -682,10 +655,6 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Zona de guardarropa vigilado para pertenencias personales en la zona de meta.</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <span>Seguro de gastos médicos para corredores formalmente inscritos.</span>
                 </li>
               </ul>
@@ -708,26 +677,9 @@ export default function HomePage() {
             </h2>
           </div>
 
-          {/* FAQ Category Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-            {faqCategories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveFaqCategory(cat)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                  activeFaqCategory === cat
-                    ? 'bg-cyan-500 text-slate-950'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-
           {/* Accordion list */}
           <div className="space-y-3">
-            {filteredFaqs.map(faq => {
+            {config.faqs.map(faq => {
               const isOpen = activeFaq === faq.id;
               return (
                 <div

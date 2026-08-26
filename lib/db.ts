@@ -29,8 +29,8 @@ export const defaultEventConfig: EventConfig = {
   maxTotalQuota: 249,
   currentTotalRegistered: 100,
   scheduleTime: '19:30 hrs (Calentamiento 18:45 hrs)',
-  kitPickupDates: 'Viernes 6 de nov (14:00 a 20:00 hrs) y Sábado 7 de nov (09:00 a 14:00 hrs)',
-  kitPickupLocation: 'Explanada del Parque Central de Paraíso, Tabasco',
+  kitPickupDates: 'Lugar y horario por definir',
+  kitPickupLocation: 'Lugar y horario por definir',
   contactWhatsapp: '+52 993 123 4567',
   contactEmail: 'contacto@neonnightrunparaiso.com',
   bankDetails: {
@@ -55,6 +55,12 @@ export const defaultEventConfig: EventConfig = {
       icon: 'Award',
     },
     {
+      id: 'kit-4',
+      title: 'Kit Neon',
+      description: 'Accesorios luminosos neón para brillar en la ruta nocturna.',
+      icon: 'Sparkles',
+    },
+    {
       id: 'kit-3',
       title: 'Número de Corredor Oficial',
       description: 'Número oficial de competidor para cronometraje y registro.',
@@ -62,19 +68,19 @@ export const defaultEventConfig: EventConfig = {
     },
   ],
   categories: [
-    { id: 'cat-1', name: 'Varonil', ageRange: '18 años en adelante', gender: 'Varonil', type: 'Competitiva' },
-    { id: 'cat-2', name: 'Femenil', ageRange: '18 años en adelante', gender: 'Femenil', type: 'Competitiva' },
+    { id: 'cat-1', name: 'Varonil', ageRange: '15 años en adelante', gender: 'Varonil', type: 'Competitiva' },
+    { id: 'cat-2', name: 'Femenil', ageRange: '15 años en adelante', gender: 'Femenil', type: 'Competitiva' },
   ],
   prizes: [
-    { category: 'Categoría Varonil (6K)', firstPlace: '$5,000 MXN + Trofeo Neón', secondPlace: '$3,000 MXN + Trofeo', thirdPlace: '$1,500 MXN + Trofeo', provisional: true },
-    { category: 'Categoría Femenil (6K)', firstPlace: '$5,000 MXN + Trofeo Neón', secondPlace: '$3,000 MXN + Trofeo', thirdPlace: '$1,500 MXN + Trofeo', provisional: true },
+    { category: 'Categoría Varonil (6K)', firstPlace: '$3,000 MXN', secondPlace: '$2,000 MXN', thirdPlace: '$1,000 MXN' },
+    { category: 'Categoría Femenil (6K)', firstPlace: '$3,000 MXN', secondPlace: '$2,000 MXN', thirdPlace: '$1,000 MXN' },
   ],
   routePoints: [
     { name: 'Arco de Salida Neón (Km 0)', kilometer: '0.0 KM', description: 'Túnel de luz negra, DJ en vivo y lluvia de humo neón.', highlight: 'Salida espectacular con cuenta regresiva lumínica' },
-    { name: 'Punto de Hidratación 1 (Km 2)', kilometer: '2.0 KM', description: 'Av. Malecón con música electrónica y agua purificada.', highlight: 'Zona de animación y luces estroboscópicas' },
-    { name: 'Paso por el Faro y Laguna (Km 3.5)', kilometer: '3.5 KM', description: 'Vista costera nocturna con iluminación perimetral cian y magenta.', highlight: 'Punto fotográfico oficial' },
-    { name: 'Punto de Hidratación 2 (Km 4.5)', kilometer: '4.5 KM', description: 'Isotónico y niebla fresca con luz ultravioleta.', highlight: 'Zona de recarga de energía' },
-    { name: 'Meta y Fiesta Neón (Km 6.0)', kilometer: '6.0 KM', description: 'Arco monumental de meta, entrega de medalla glow y After-Party con DJ.', highlight: 'Concierto y premiación en vivo' },
+    { name: 'Malecón Turístico y Boulevard (Km 1.5)', kilometer: '1.5 KM', description: 'Música DJ, iluminación perimetral y ambientación neón.', highlight: 'Zona con animación y DJ' },
+    { name: 'Punto de Hidratación (Km 3.0)', kilometer: '3.0 KM', description: 'Agua purificada y animación musical.', highlight: 'Zona de hidratación oficial' },
+    { name: 'Paso por el Cangrejo y Hotel Baez (Km 4.5)', kilometer: '4.5 KM', description: 'Monumento del Cangrejo y Hotel Baez con ambiente festivo.', highlight: 'Punto fotográfico emblemático' },
+    { name: 'Meta y Fiesta Neón (Km 6.0)', kilometer: '6.0 KM', description: 'Arco monumental de meta, entrega de medalla glow y After-Party con DJ.', highlight: 'Fiesta neón y premiación' },
   ],
   sponsors: [
     {
@@ -136,13 +142,13 @@ export const defaultEventConfig: EventConfig = {
     {
       id: 'faq-1',
       question: '¿Qué incluye el costo de inscripción de $350 MXN?',
-      answer: 'Tu inscripción incluye: Playera oficial conmemorativa, Medalla de finalista y Número oficial de corredor.',
+      answer: 'Tu inscripción incluye: Playera oficial conmemorativa, Medalla de finalista, Kit Neon y Número oficial de corredor.',
       category: 'Inscripción',
     },
     {
       id: 'faq-2',
       question: '¿Dónde y cuándo se entregan los kits?',
-      answer: 'La entrega será el viernes 6 de noviembre de 14:00 a 20:00 hrs y el sábado 7 de noviembre de 09:00 a 14:00 hrs en la Explanada del Parque Central de Paraíso. Deberás presentar tu código QR o folio NNR y una identificación oficial.',
+      answer: 'Lugar y horario por definir.',
       category: 'Kits',
     },
     {
@@ -150,12 +156,6 @@ export const defaultEventConfig: EventConfig = {
       question: '¿Puedo recoger el kit de otra persona?',
       answer: 'Sí, presentando la confirmación con código QR del participante y una copia simple de su identificación oficial.',
       category: 'Kits',
-    },
-    {
-      id: 'faq-4',
-      question: '¿Habrá guardarropa y estacionamiento?',
-      answer: 'Sí, contaremos con servicio de guardarropa gratuito para corredores inscritos en la zona de meta y áreas designadas de estacionamiento con vigilancia en los alrededores del Malecón.',
-      category: 'Logística',
     },
     {
       id: 'faq-5',
@@ -184,7 +184,7 @@ export const defaultPricingStages: PricingStage[] = [
     soldCount: 100,
     active: true,
     badgeText: 'Tarifa Única Vigente',
-    description: 'Incluye playera, medalla y número oficial de corredor.',
+    description: 'Incluye playera, medalla, Kit Neon y número oficial de corredor.',
   },
 ];
 
