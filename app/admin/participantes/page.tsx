@@ -59,6 +59,7 @@ export default function AdminParticipantesPage() {
   const [manualPaymentType, setManualPaymentType] = useState<'cash' | 'transfer' | 'courtesy' | 'pending'>('cash');
   const [modalSuccessMsg, setModalSuccessMsg] = useState<string | null>(null);
   const [modalErrorMsg, setModalErrorMsg] = useState<string | null>(null);
+  const [successNotification, setSuccessNotification] = useState<string | null>(null);
 
   const fetchParticipants = async () => {
     setLoading(true);
@@ -174,7 +175,11 @@ export default function AdminParticipantesPage() {
       });
       if (res.ok) {
         setEditingParticipant(null);
+        setSuccessNotification('Modificación realizada con éxito.');
+        setTimeout(() => setSuccessNotification(null), 4000);
         fetchParticipants();
+      } else {
+        alert('Error al guardar los cambios del participante');
       }
     } catch (err) {
       console.error('Error saving participant:', err);
@@ -303,7 +308,15 @@ export default function AdminParticipantesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* SUCCESS FLOATING NOTIFICATION */}
+      {successNotification && (
+        <div className="fixed top-6 right-6 z-50 p-4 bg-emerald-950/90 border border-emerald-500/50 rounded-2xl shadow-2xl flex items-center gap-3 text-emerald-200 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 animate-pulse" />
+          <span>{successNotification}</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

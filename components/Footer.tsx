@@ -104,17 +104,16 @@ export default function Footer() {
               Contacto y Soporte
             </h4>
             <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                <span>Malecón Turístico, Paraíso, Tabasco, México</span>
-              </li>
               <li className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4 text-fuchsia-400 shrink-0" />
-                <span>contacto@neonnightrunparaiso.mx</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-yellow-400 shrink-0" />
-                <span>WhatsApp: +52 (993) 123-4567</span>
+                <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a
+                  href="https://wa.me/529331134405"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-emerald-400 transition-colors font-semibold"
+                >
+                  WhatsApp: 9331134405
+                </a>
               </li>
             </ul>
           </div>

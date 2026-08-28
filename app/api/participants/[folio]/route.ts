@@ -43,6 +43,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ foli
   }
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ folio: string }> }) {
+  try {
+    const { folio } = await params;
+    const body = await req.json();
+    const { adminEmail, ...updates } = body;
+
+    const updated = await updateParticipant(folio, updates, adminEmail || 'admin');
+    if (!updated) {
+      return NextResponse.json({ success: false, error: 'Participante no encontrado' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating participant via PATCH:', error);
+    return NextResponse.json({ success: false, error: 'Error al actualizar participante' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ folio: string }> }) {
   try {
     const { folio } = await params;
