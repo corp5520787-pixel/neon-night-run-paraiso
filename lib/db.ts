@@ -81,8 +81,8 @@ export const defaultEventConfig: EventConfig = {
     { id: 'cat-2', name: 'Femenil', ageRange: '15 años en adelante', gender: 'Femenil', type: 'Competitiva' },
   ],
   prizes: [
-    { category: 'Categoría Varonil (6K)', firstPlace: '$3,000 MXN', secondPlace: '$2,000 MXN', thirdPlace: '$1,000 MXN' },
-    { category: 'Categoría Femenil (6K)', firstPlace: '$3,000 MXN', secondPlace: '$2,000 MXN', thirdPlace: '$1,000 MXN' },
+    { category: 'Categoría Varonil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
+    { category: 'Categoría Femenil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
   ],
   routePoints: [
     { name: 'Arco de Salida Neón (Km 0)', kilometer: '0.0 KM', description: 'Túnel de luz negra, DJ en vivo y lluvia de humo neón.', highlight: 'Salida espectacular con cuenta regresiva lumínica' },
@@ -607,7 +607,16 @@ export async function getEventConfig(): Promise<EventConfig> {
   await ensureSeeded();
   const snap = await getDoc(doc(db, 'config', 'nnr-paraiso-2026'));
   if (snap.exists()) {
-    return snap.data() as EventConfig;
+    const data = snap.data() as EventConfig;
+    // Migrar premios antiguos a los nuevos si es necesario
+    if (data.prizes && data.prizes.length > 0 && data.prizes[0].firstPlace === '$3,000 MXN') {
+      data.prizes = [
+        { category: 'Categoría Varonil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
+        { category: 'Categoría Femenil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
+      ];
+      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
+    }
+    return data;
   }
   return defaultEventConfig;
 }
