@@ -3,7 +3,7 @@ import { exportParticipantsCSV } from '@/lib/db';
 
 export async function GET() {
   try {
-    const csvContent = exportParticipantsCSV();
+    const csvContent = await exportParticipantsCSV();
     const dateStr = new Date().toISOString().split('T')[0];
     const filename = `neon-night-run-inscritos-${dateStr}.csv`;
 

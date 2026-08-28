@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
       ? kitDeliveredParam === 'true'
       : undefined;
 
-    const participants = getParticipants({
+    const participants = await getParticipants({
       status,
       shirtSize,
       category,

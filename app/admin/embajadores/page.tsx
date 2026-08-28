@@ -94,6 +94,22 @@ export default function AdminEmbajadoresPage() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este código de embajador por completo?')) return;
+    try {
+      const res = await fetch(`/api/ambassadors/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        fetchAmbassadors();
+      } else {
+        alert('Error al eliminar el código');
+      }
+    } catch (err) {
+      console.error('Error deleting ambassador:', err);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -141,6 +157,7 @@ export default function AdminEmbajadoresPage() {
                 <th className="py-3.5 px-4 text-right">Ventas Totales</th>
                 <th className="py-3.5 px-4 text-right">Comisión a Pagar</th>
                 <th className="py-3.5 px-4 text-center">Estado</th>
+                <th className="py-3.5 px-4 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
@@ -169,16 +186,31 @@ export default function AdminEmbajadoresPage() {
                     ${Math.round(((amb.totalRevenue || 0) * (amb.commissionPercent || 10)) / 100).toLocaleString()} MXN
                   </td>
                   <td className="py-3.5 px-4 text-center">
-                    <button
-                      onClick={() => toggleActive(amb.id, amb.active)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-colors ${
-                        amb.active
-                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-900'
-                          : 'bg-rose-950 text-rose-400 border border-rose-500/40 hover:bg-rose-900'
-                      }`}
-                    >
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                      amb.active
+                        ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                        : 'bg-rose-950 text-rose-400 border border-rose-500/40'
+                    }`}>
                       {amb.active ? 'Activo' : 'Pausado'}
-                    </button>
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => toggleActive(amb.id, amb.active)}
+                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[10px] font-bold uppercase transition-colors"
+                        title={amb.active ? 'Pausar Código' : 'Activar Código'}
+                      >
+                        {amb.active ? 'Pausar' : 'Activar'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(amb.id)}
+                        className="p-1.5 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 text-rose-400 rounded-lg transition-colors"
+                        title="Eliminar Código"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

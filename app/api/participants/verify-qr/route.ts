@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ valid: false, message: 'Se requiere código QR o folio para verificar.' }, { status: 400 });
     }
 
-    const participant = getParticipantByFolioOrQr(query);
+    const participant = await getParticipantByFolioOrQr(query);
     if (!participant) {
       return NextResponse.json({
         valid: false,

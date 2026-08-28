@@ -3,7 +3,7 @@ import { getPricingStages, createPricingStage } from '@/lib/db';
 
 export async function GET() {
   try {
-    const stages = getPricingStages();
+    const stages = await getPricingStages();
     return NextResponse.json({ success: true, data: stages });
   } catch (error) {
     console.error('Error fetching stages:', error);
@@ -14,7 +14,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const stage = createPricingStage(body, body.adminEmail || 'admin');
+    const stage = await createPricingStage(body, body.adminEmail || 'admin');
     return NextResponse.json({ success: true, data: stage }, { status: 201 });
   } catch (error) {
     console.error('Error creating stage:', error);

@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fol
       return NextResponse.json({ success: false, message: 'Se requiere motivo para revertir entrega.' }, { status: 400 });
     }
 
-    const result = revertKitDelivered(
+    const result = await revertKitDelivered(
       folio,
       {
         email: adminEmail || 'admin@neonnightrunparaiso.mx',

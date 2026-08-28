@@ -146,57 +146,8 @@ export default function HomePage() {
               className="w-full sm:w-auto px-7 py-4 rounded-2xl font-bold text-sm text-slate-200 bg-slate-900/80 border border-slate-700 hover:border-cyan-400 hover:text-white transition-all flex items-center justify-center gap-2"
             >
               <Shirt className="w-4 h-4 text-cyan-400" />
-              <span>Ver Kit Oficial y Ruta</span>
+              <span>Ver Kit Oficial</span>
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* 2. QUICK METRIC STRIP */}
-      {/* ---------------------------------------------------------------------- */}
-      <section className="border-y border-slate-800 bg-[#090e1a] py-8 relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <div className="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center shrink-0">
-                <Calendar className="w-6 h-6 text-cyan-400" />
-              </div>
-              <div>
-                <div className="text-xs uppercase text-slate-400 font-semibold">Fecha</div>
-                <div className="text-sm sm:text-base font-bold text-white">7 Noviembre 2026</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <div className="w-12 h-12 rounded-xl bg-fuchsia-950/80 border border-fuchsia-500/40 flex items-center justify-center shrink-0">
-                <Clock className="w-6 h-6 text-fuchsia-400" />
-              </div>
-              <div>
-                <div className="text-xs uppercase text-slate-400 font-semibold">Horario</div>
-                <div className="text-sm sm:text-base font-bold text-white">19:30 hrs (Noche)</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <div className="w-12 h-12 rounded-xl bg-yellow-950/80 border border-yellow-500/40 flex items-center justify-center shrink-0">
-                <MapPin className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div>
-                <div className="text-xs uppercase text-slate-400 font-semibold">Ubicación</div>
-                <div className="text-sm sm:text-base font-bold text-white">Malecón de Paraíso, Tab.</div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <div className="w-12 h-12 rounded-xl bg-blue-950/80 border border-blue-500/40 flex items-center justify-center shrink-0">
-                <Zap className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                <div className="text-xs uppercase text-slate-400 font-semibold">Distancia</div>
-                <div className="text-sm sm:text-base font-bold text-white">6 KM (Glow Night)</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -205,74 +156,6 @@ export default function HomePage() {
       {/* PATROCINADORES Y MARCAS ALIADAS (SLIDER AUTOMÁTICO) */}
       {/* ---------------------------------------------------------------------- */}
       <SponsorSlider initialSponsors={config.sponsors} />
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* 3. EXPERIENCIA NOCTURNA */}
-      {/* ---------------------------------------------------------------------- */}
-      <section id="experiencia" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs font-extrabold text-cyan-400 uppercase tracking-widest bg-cyan-950/80 border border-cyan-500/30 px-3 py-1 rounded-full">
-            La Experiencia
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mt-4 mb-4 tracking-tight">
-            MÁS QUE UNA CARRERA, <br />
-            <span className="text-fuchsia-400">UN FESTIVAL DE LUZ Y ENERGÍA</span>
-          </h2>
-          <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-            Diseñada tanto para corredores experimentados que buscan romper su marca de 6K como para familias, amigos y grupos recreativos que desean vivir una fiesta deportiva inolvidable.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="bg-[#0b1120] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 hover:border-cyan-400 transition-all glow-cyan flex flex-col justify-between">
-            <div>
-              <div className="w-14 h-14 rounded-2xl bg-cyan-950 border border-cyan-500/40 flex items-center justify-center mb-6">
-                <Sparkles className="w-7 h-7 text-cyan-400" />
-              </div>
-              <h3 className="text-xl font-black text-white mb-3">Zonas de Luz Negra & Polvo UV</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Durante el trayecto cruzarás arcos iluminados con luz ultravioleta, donde tu playera reflectante, pulseras y pintura corporal brillarán intensamente.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800 text-xs font-semibold text-cyan-300">
-              Puntos de hidratación ambientados he iluminación audiorítmica
-            </div>
-          </div>
-
-          {/* Card 2 */}
-          <div className="bg-[#0b1120] border border-fuchsia-500/30 rounded-3xl p-6 sm:p-8 hover:border-fuchsia-400 transition-all glow-magenta flex flex-col justify-between">
-            <div>
-              <div className="w-14 h-14 rounded-2xl bg-fuchsia-950 border border-fuchsia-500/40 flex items-center justify-center mb-6">
-                <Music className="w-7 h-7 text-fuchsia-400" />
-              </div>
-              <h3 className="text-xl font-black text-white mb-3">DJ en Vivo & Sound Tunnels</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Música electrónica y ritmos de alta frecuencia en la salida, meta y túneles intermedios para mantener tu pulso y motivación al 100%.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800 text-xs font-semibold text-fuchsia-300">
-              Ambiente 100% familiar y seguro
-            </div>
-          </div>
-
-          {/* Card 3 */}
-          <div className="bg-[#0b1120] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 hover:border-yellow-400 transition-all glow-yellow flex flex-col justify-between">
-            <div>
-              <div className="w-14 h-14 rounded-2xl bg-yellow-950 border border-yellow-500/40 flex items-center justify-center mb-6">
-                <Award className="w-7 h-7 text-yellow-400" />
-              </div>
-              <h3 className="text-xl font-black text-white mb-3">Medalla Glow & After-Party</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Al cruzar la meta recibirás tu medalla neon, hidratación fría y acceso exclusivo a rifa y sorteos post-carrera.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800 text-xs font-semibold text-yellow-300">
-              Celebración oficial de meta
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ---------------------------------------------------------------------- */}
       {/* 4. CONTENIDO DEL KIT OFICIAL */}
@@ -284,71 +167,11 @@ export default function HomePage() {
               Kit de Corredor
             </span>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mt-4 mb-4 tracking-tight">
-              TODO LO QUE INCLUYE TU INSCRIPCIÓN
+              QUE INCLUYE TU INSCRIPCIÓN
             </h2>
-            <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-              Equipamiento técnico de alta calidad y artículos luminosos para hacer de tu 6K una noche mágica.
-            </p>
           </div>
 
-          {/* Visual Showcase: Shirt & Medal Preview Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Playera Oficial Card */}
-            <div className="bg-[#0b1120] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-cyan-950 border border-cyan-500/40 text-cyan-300">
-                  Playera Oficial 2026
-                </span>
-                <span className="text-xs text-yellow-400 font-semibold bg-yellow-950/60 px-2 py-0.5 rounded">
-                  *Diseño conmemorativo provisional
-                </span>
-              </div>
 
-              {/* Graphic container */}
-              <div className="h-64 rounded-2xl bg-gradient-to-b from-slate-900 to-[#060913] border border-slate-800 flex flex-col items-center justify-center p-6 text-center relative group">
-                <div className="w-24 h-24 rounded-full bg-cyan-950/80 border border-cyan-400/60 flex items-center justify-center glow-cyan mb-3">
-                  <Shirt className="w-12 h-12 text-cyan-300" />
-                </div>
-                <div className="text-lg font-black text-white tracking-wide">
-                  PLAYERA TÉCNICA DRY-FIT NEÓN
-                </div>
-                <p className="text-xs text-slate-400 max-w-xs mt-1">
-                  Tejido ultraligero transpirable, corte ergonómico y serigrafía reflectante reactiva a luz negra.
-                </p>
-                <div className="flex gap-2 mt-4 text-[11px] font-bold text-cyan-400">
-                  <span>XS</span> · <span>S</span> · <span>M</span> · <span>L</span> · <span>XL</span> · <span>XXL</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Medalla Oficial Card */}
-            <div className="bg-[#0b1120] border border-fuchsia-500/30 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
-              <div className="flex items-center justify-between mb-4">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300">
-                  Medalla de Finalista
-                </span>
-                <span className="text-xs text-yellow-400 font-semibold bg-yellow-950/60 px-2 py-0.5 rounded">
-                  *Esmalte Glow in the Dark
-                </span>
-              </div>
-
-              {/* Graphic container */}
-              <div className="h-64 rounded-2xl bg-gradient-to-b from-slate-900 to-[#060913] border border-slate-800 flex flex-col items-center justify-center p-6 text-center relative group">
-                <div className="w-24 h-24 rounded-full bg-fuchsia-950/80 border border-fuchsia-400/60 flex items-center justify-center glow-magenta mb-3">
-                  <Award className="w-12 h-12 text-fuchsia-300" />
-                </div>
-                <div className="text-lg font-black text-white tracking-wide">
-                  MEDALLA CONMEMORATIVA 85MM
-                </div>
-                <p className="text-xs text-slate-400 max-w-xs mt-1">
-                  Fundición de zinc con relieve tridimensional, elementos fotoluminiscentes y listón sublimado de alta resistencia.
-                </p>
-                <div className="text-[11px] font-bold text-fuchsia-400 mt-4">
-                  Para todos los corredores que crucen la meta
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Grid of Kit Items */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -368,29 +191,6 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Kit pickup details callout */}
-          <div className="mt-12 bg-slate-900/90 border border-cyan-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <div className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
-                Logística de Entrega de Kits
-              </div>
-              <div className="text-base font-bold text-white">
-                {config.kitPickupDates}
-              </div>
-              <div className="text-sm text-slate-300 flex items-center gap-1.5 mt-1">
-                <MapPin className="w-4 h-4 text-cyan-400" />
-                {config.kitPickupLocation}
-              </div>
-            </div>
-
-            <Link
-              href="/registro"
-              className="px-6 py-3 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-sm rounded-xl shrink-0 transition-colors"
-            >
-              Asegurar mi Kit ahora
-            </Link>
           </div>
         </div>
       </section>
@@ -423,7 +223,7 @@ export default function HomePage() {
               Boleto Corredor 6K
             </h3>
             <p className="text-sm text-cyan-300 font-semibold max-w-md mx-auto mb-6">
-              Incluye: Playera, medalla, Kit Neon y número oficial de corredor.
+              Incluye: Playera, medalla y Kit Neon.
             </p>
 
             <div className="text-5xl sm:text-6xl font-black text-white font-mono my-4 flex items-center justify-center gap-2">
@@ -538,126 +338,34 @@ export default function HomePage() {
       </section>
 
       {/* ---------------------------------------------------------------------- */}
-      {/* 7. RUTA 6K Y PUNTOS DE ANIMACIÓN */}
-      {/* ---------------------------------------------------------------------- */}
-      <section id="ruta" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs font-extrabold text-fuchsia-400 uppercase tracking-widest bg-fuchsia-950/80 border border-fuchsia-500/30 px-3 py-1 rounded-full">
-            Recorrido Oficial
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white mt-4 mb-4 tracking-tight">
-            CIRCUITO NOCTURNO 6K
-          </h2>
-          <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-            Recorrido plano, pavimentado y 100% resguardado que bordea el Malecón Turístico, Cangrejo y boulevard principal de paraíso, Hotel baez.
-          </p>
-        </div>
-
-        {/* Route Milestones */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-12">
-          {config.routePoints.map((pt, i) => (
-            <div key={i} className="bg-[#0b1120] border border-cyan-500/20 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between">
-              <div className="absolute top-0 right-0 px-3 py-1 bg-cyan-950 text-cyan-300 text-xs font-mono font-bold rounded-bl-xl border-l border-b border-cyan-500/30">
-                {pt.kilometer}
-              </div>
-              <div>
-                <div className="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 font-black text-sm flex items-center justify-center mb-4">
-                  {i + 1}
-                </div>
-                <h4 className="font-bold text-white text-sm mb-2">{pt.name}</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">{pt.description}</p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] font-semibold text-fuchsia-400">
-                ★ {pt.highlight}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Map Placeholder Graphic Container */}
-        <div className="bg-[#0b1120] border border-slate-800 rounded-3xl p-6 sm:p-8 text-center relative overflow-hidden">
-          <div className="h-64 sm:h-80 rounded-2xl bg-gradient-to-br from-slate-950 via-[#060913] to-slate-900 border border-slate-800 flex flex-col items-center justify-center p-6 relative">
-            <div className="w-16 h-16 rounded-2xl bg-cyan-950 border border-cyan-400/40 flex items-center justify-center glow-cyan mb-4">
-              <MapPin className="w-8 h-8 text-cyan-400 animate-bounce" />
-            </div>
-            <h4 className="text-xl font-bold text-white">Mapa de Ruta 6K Certificada</h4>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-md mt-1">
-              Salida y Meta: Malecón Turístico de Paraíso · Recorrido plano de asfalto con señalización lumínica cada 500 metros.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-6 text-xs text-slate-300">
-              <span className="flex items-center gap-1">
-                <Droplets className="w-4 h-4 text-cyan-400" /> 1 Punto de Hidratación
-              </span>
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> Resguardo Vial Municipal
-              </span>
-              <span className="flex items-center gap-1">
-                <Music className="w-4 h-4 text-fuchsia-400" /> DJ en todo el recorrido
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* 8. ENTRENAMIENTOS "DE CERO A 6K" & SEGURIDAD */}
+      {/* 8. ENTRENAMIENTOS EN POWERFIT */}
       {/* ---------------------------------------------------------------------- */}
       <section className="py-20 bg-[#090e1a] border-y border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Left: Program Powerfit */}
-            <div className="space-y-6">
-              <span className="text-xs font-extrabold text-yellow-400 uppercase tracking-widest bg-yellow-950/80 border border-yellow-500/30 px-3 py-1 rounded-full">
-                Preparación Deportiva
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-                ENTRÉNATE EN <br />
-                <span className="text-yellow-400">“POWERFIT”</span>
-              </h2>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                ¡Prepárate con todo para la carrera! Te invitamos a sumarte a los entrenamientos en <strong>Powerfit</strong>. Acércate y pregunta por el <strong>precio especial exclusivo</strong> para participantes de la Carrera Neón.
-              </p>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#0b1120] border border-yellow-500/30 rounded-3xl p-6 sm:p-10 space-y-6 text-center">
+            <span className="inline-block text-xs font-extrabold text-yellow-400 uppercase tracking-widest bg-yellow-950/80 border border-yellow-500/30 px-3 py-1 rounded-full">
+              Preparación Deportiva
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              ENTRÉNATE EN <span className="text-yellow-400">“POWERFIT”</span>
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
+              ¡Prepárate con todo para la carrera! Te invitamos a sumarte a los entrenamientos en <strong>Powerfit</strong>. Acércate y pregunta por el <strong>precio especial exclusivo</strong> para participantes de la Carrera Neón.
+            </p>
 
-              <div className="space-y-3">
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
-                  <Dumbbell className="w-5 h-5 text-cyan-400 shrink-0" />
-                  <div className="text-xs sm:text-sm text-slate-300">
-                    <strong>Acondicionamiento y fuerza:</strong> Entrenamientos funcionales y preparación física guiada en Powerfit.
-                  </div>
-                </div>
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
-                  <Sparkles className="w-5 h-5 text-yellow-400 shrink-0" />
-                  <div className="text-xs sm:text-sm text-slate-300">
-                    <strong>Precio especial para corredores:</strong> Menciona que eres participante de la Neon Night Run para acceder a tu tarifa preferencial.
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 text-left">
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
+                <Dumbbell className="w-5 h-5 text-cyan-400 shrink-0" />
+                <div className="text-xs sm:text-sm text-slate-300">
+                  <strong>Acondicionamiento y fuerza:</strong> Entrenamientos funcionales y preparación física guiada en Powerfit.
                 </div>
               </div>
-            </div>
-
-            {/* Right: Security & Medical */}
-            <div className="bg-[#0b1120] border border-cyan-500/30 rounded-3xl p-6 sm:p-8">
-              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                Seguridad y Protocolo Médico
-              </h3>
-              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
-                Tu bienestar es nuestra máxima prioridad. Contamos con un despliegue operativo integral coordinado con las autoridades de protección civil y tránsito de Paraíso.
-              </p>
-
-              <ul className="space-y-3 text-xs sm:text-sm text-slate-300">
-                <li className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Ambulancia de terapia intensiva y paramédicos en bicicleta a lo largo de toda la ruta.</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Cierre vial total del circuito coordinado con Tránsito Municipal.</span>
-                </li>
-                <li className="flex items-start gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                  <span>Seguro de gastos médicos para corredores formalmente inscritos.</span>
-                </li>
-              </ul>
+              <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center gap-3">
+                <Sparkles className="w-5 h-5 text-yellow-400 shrink-0" />
+                <div className="text-xs sm:text-sm text-slate-300">
+                  <strong>Precio especial para corredores:</strong> Menciona que eres participante de la Neon Night Run para acceder a tu tarifa preferencial.
+                </div>
+              </div>
             </div>
           </div>
         </div>

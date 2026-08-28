@@ -3,7 +3,7 @@ import { getEventConfig, updateEventConfig } from '@/lib/db';
 
 export async function GET() {
   try {
-    const config = getEventConfig();
+    const config = await getEventConfig();
     return NextResponse.json({ success: true, data: config });
   } catch (error) {
     console.error('Error fetching event config:', error);
@@ -14,7 +14,7 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const updated = updateEventConfig(body, body.adminEmail || 'admin');
+    const updated = await updateEventConfig(body, body.adminEmail || 'admin');
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error('Error updating event config:', error);

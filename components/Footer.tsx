@@ -54,11 +54,6 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/#ruta" className="hover:text-cyan-400 transition-colors">
-                  Ruta 6K y Puntos Clave
-                </Link>
-              </li>
-              <li>
                 <Link href="/#faq" className="hover:text-cyan-400 transition-colors">
                   Preguntas Frecuentes
                 </Link>

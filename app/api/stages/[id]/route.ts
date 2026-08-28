@@ -5,7 +5,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await req.json();
-    const updated = updatePricingStage(id, body, body.adminEmail || 'admin');
+    const updated = await updatePricingStage(id, body, body.adminEmail || 'admin');
     if (!updated) {
       return NextResponse.json({ success: false, error: 'Etapa no encontrada' }, { status: 404 });
     }

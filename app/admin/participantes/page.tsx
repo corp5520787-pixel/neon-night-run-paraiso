@@ -19,6 +19,7 @@ import {
   X,
   Loader2,
   UserPlus,
+  AlertTriangle,
   Building2,
   Sparkles,
   Ticket,
@@ -39,6 +40,7 @@ export default function AdminParticipantesPage() {
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
   const [showCourtesyModal, setShowCourtesyModal] = useState(false);
   const [submittingModal, setSubmittingModal] = useState(false);
+  const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
 
   // Manual / Courtesy form states
   const [showManualModal, setShowManualModal] = useState(false);
@@ -176,6 +178,26 @@ export default function AdminParticipantesPage() {
       }
     } catch (err) {
       console.error('Error saving participant:', err);
+    } finally {
+      setSubmittingModal(false);
+    }
+  };
+
+  const confirmDeleteParticipant = async () => {
+    if (!participantToDelete) return;
+    setSubmittingModal(true);
+    try {
+      const res = await fetch(`/api/participants/${participantToDelete.folio}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setParticipantToDelete(null);
+        fetchParticipants();
+      } else {
+        alert('Error al eliminar el participante');
+      }
+    } catch (err) {
+      console.error('Error deleting participant:', err);
     } finally {
       setSubmittingModal(false);
     }
@@ -454,6 +476,13 @@ export default function AdminParticipantesPage() {
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Link>
+                        <button
+                          onClick={() => setParticipantToDelete(p)}
+                          className="p-1.5 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 text-rose-400 rounded-lg transition-colors"
+                          title="Eliminar Corredor"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -883,6 +912,49 @@ export default function AdminParticipantesPage() {
                 </div>
               </div>
             </form>
+          </div>
+         </div>
+       )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {participantToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-rose-950/30">
+            <div className="flex items-center gap-3 text-rose-400 mb-4">
+              <div className="p-2 bg-rose-950/50 rounded-xl border border-rose-500/20">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-white">¿Seguro que quieres eliminar?</h3>
+            </div>
+            
+            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+              Estás a punto de eliminar por completo al participante <strong className="text-white">{participantToDelete.fullName}</strong> con folio <strong className="text-yellow-400 font-mono">{participantToDelete.folio}</strong>.
+              <br />
+              <span className="text-rose-400 text-xs mt-2 block">Esta acción es irreversible y no se puede deshacer.</span>
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setParticipantToDelete(null)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteParticipant}
+                disabled={submittingModal}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl flex items-center gap-1.5 transition-colors shadow-lg shadow-rose-950/40 text-sm"
+              >
+                {submittingModal ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                <span>Eliminar</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

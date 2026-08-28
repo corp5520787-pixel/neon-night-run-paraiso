@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server';
-import { getDB, getDashboardMetrics } from '@/lib/db';
+import { getDashboardMetrics, getParticipants, getOrders, getAmbassadorCodes, getEventConfig } from '@/lib/db';
 import { DashboardStats } from '@/lib/types';
 
 export async function GET() {
   try {
-    const db = getDB();
-    const metrics = getDashboardMetrics();
+    const config = await getEventConfig();
+    const metrics = await getDashboardMetrics();
+    const participants = await getParticipants();
+    const orders = await getOrders();
+    const ambassadors = await getAmbassadorCodes();
 
-    const confirmed = db.participants.filter(p => p.status === 'confirmed');
-    const pendingTransfers = db.orders.filter(o => o.paymentMethod === 'transfer' && o.paymentStatus === 'pending');
+    const confirmed = participants.filter(p => p.status === 'confirmed');
+    const pendingTransfers = orders.filter(o => o.paymentMethod === 'transfer' && o.paymentStatus === 'pending');
 
-    const leaderboard = db.ambassadors.map(a => ({
+    const leaderboard = ambassadors.map(a => ({
       code: a.code,
       name: a.ambassadorName,
       usageCount: a.usedCount,
@@ -19,15 +22,15 @@ export async function GET() {
     })).sort((a, b) => b.totalSales - a.totalSales);
 
     const stats: DashboardStats = {
-      totalRegistered: db.config.currentTotalRegistered,
-      totalQuota: db.config.maxTotalQuota,
+      totalRegistered: config.currentTotalRegistered,
+      totalQuota: config.maxTotalQuota,
       totalRevenue: metrics.totalRevenue,
       totalConfirmed: confirmed.length,
       pendingTransfersCount: pendingTransfers.length,
       kitsDeliveredCount: metrics.kitsDelivered,
       sizeBreakdown: metrics.shirtSizes,
       ambassadorLeaderboard: leaderboard,
-      recentParticipants: [...db.participants].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10),
+      recentParticipants: [...participants].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 10),
     };
 
     return NextResponse.json({

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     if (!code || typeof code !== 'string') {
       return NextResponse.json({ success: false, message: 'Código requerido' }, { status: 400 });
     }
-    const result = validateAmbassadorCode(code);
+    const result = await validateAmbassadorCode(code);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error validating ambassador code:', error);

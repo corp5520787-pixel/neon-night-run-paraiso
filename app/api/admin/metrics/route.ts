@@ -3,9 +3,9 @@ import { getDashboardMetrics, getAuditLogs, getKitDeliveryLogs } from '@/lib/db'
 
 export async function GET() {
   try {
-    const metrics = getDashboardMetrics();
-    const recentAudit = getAuditLogs().slice(0, 15);
-    const recentKitLogs = getKitDeliveryLogs().slice(0, 15);
+    const metrics = await getDashboardMetrics();
+    const recentAudit = (await getAuditLogs()).slice(0, 15);
+    const recentKitLogs = (await getKitDeliveryLogs()).slice(0, 15);
 
     return NextResponse.json({
       success: true,

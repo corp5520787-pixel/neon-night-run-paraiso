@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const activeOnly = searchParams.get('active') === 'true';
-    const sponsors = getSponsors(activeOnly);
+    const sponsors = await getSponsors(activeOnly);
     return NextResponse.json({ success: true, data: sponsors });
   } catch (error) {
     console.error('Error fetching sponsors:', error);
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'El nombre del patrocinador es obligatorio' }, { status: 400 });
     }
 
-    const created = createSponsor(
+    const created = await createSponsor(
       {
         name: body.name.trim(),
         tier: body.tier || 'Oficial',
@@ -46,7 +46,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'ID de patrocinador no especificado' }, { status: 400 });
     }
 
-    const updated = updateSponsor(body.id, body, body.adminEmail || 'admin');
+    const updated = await updateSponsor(body.id, body, body.adminEmail || 'admin');
     if (!updated) {
       return NextResponse.json({ success: false, error: 'Patrocinador no encontrado' }, { status: 404 });
     }
@@ -66,7 +66,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'ID de patrocinador requerido' }, { status: 400 });
     }
 
-    const deleted = deleteSponsor(id);
+    const deleted = await deleteSponsor(id);
     return NextResponse.json({ success: deleted });
   } catch (error) {
     console.error('Error deleting sponsor:', error);

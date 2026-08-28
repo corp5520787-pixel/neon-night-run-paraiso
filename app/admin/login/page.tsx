@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, ShieldCheck, Sparkles, User, ArrowRight, AlertCircle } from 'lucide-react';
+import { Lock, ShieldCheck, Sparkles, User, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 import { setStoredAdminUser } from '@/lib/admin-auth';
 import { AdminRole, AdminUser } from '@/lib/types';
 
@@ -12,40 +12,44 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState('admin@neonnightrun.com');
   const [password, setPassword] = useState('admin2026');
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e?: React.FormEvent) => {
+  const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+  const handleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError(null);
+    setLoading(true);
 
-    // Validate demo credentials
-    if (email === 'admin@neonnightrun.com') {
-      const user: AdminUser = {
-        id: 'admin-1',
-        email: 'admin@neonnightrun.com',
-        name: 'Director de Carrera',
-        role: 'admin',
-      };
-      setStoredAdminUser(user);
-      router.push('/admin');
-    } else if (email === 'kits@neonnightrun.com') {
-      const user: AdminUser = {
-        id: 'staff-1',
-        email: 'kits@neonnightrun.com',
-        name: 'Staff Entrega de Kits',
-        role: 'kits_staff',
-      };
-      setStoredAdminUser(user);
-      router.push('/admin/entrega-kits');
-    } else {
-      // Default to admin user for testing
-      const user: AdminUser = {
-        id: 'user-custom',
-        email: email || 'staff@neonnightrun.com',
-        name: 'Administrador Registrado',
-        role: 'admin',
-      };
-      setStoredAdminUser(user);
-      router.push('/admin');
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          setStoredAdminUser(data.user);
+          if (data.user.role === 'kits_staff') {
+            router.push('/admin/entrega-kits');
+          } else {
+            router.push('/admin');
+          }
+          return;
+        }
+      }
+
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || 'Credenciales incorrectas. Verifique el correo y la contraseña.');
+    } catch (err) {
+      console.error('Error logging in:', err);
+      setError('Ocurrió un error al intentar iniciar sesión. Por favor, intente de nuevo.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,8 +100,9 @@ export default function AdminLoginPage() {
                 type="email"
                 required
                 value={email}
+                disabled={loading}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-400"
+                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-400 disabled:opacity-50"
               />
             </div>
 
@@ -109,45 +114,53 @@ export default function AdminLoginPage() {
                 type="password"
                 required
                 value={password}
+                disabled={loading}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-400"
+                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-cyan-400 disabled:opacity-50"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 font-black text-sm rounded-xl hover:brightness-110 transition-all glow-cyan flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full py-3.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 font-black text-sm rounded-xl hover:brightness-110 transition-all glow-cyan flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Lock className="w-4 h-4 text-slate-950" />
-              <span>Iniciar Sesión</span>
+              {loading ? (
+                <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+              ) : (
+                <Lock className="w-4 h-4 text-slate-950" />
+              )}
+              <span>{loading ? 'Iniciando Sesión...' : 'Iniciar Sesión'}</span>
             </button>
           </form>
 
           {/* Quick Demo Access Roles */}
-          <div className="pt-4 border-t border-slate-800">
-            <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center mb-3">
-              Acceso Rápido de Prueba (Demo Roles)
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin', 'Director General', 'admin@neonnightrun.com')}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 rounded-xl text-xs font-bold text-center flex flex-col items-center justify-center transition-colors"
-              >
-                <span>🛡️ Director Admin</span>
-                <span className="text-[10px] text-slate-400 font-normal mt-0.5">Acceso Total</span>
-              </button>
+          {isDemoMode && (
+            <div className="pt-4 border-t border-slate-800">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 text-center mb-3">
+                Acceso Rápido de Prueba (Demo Roles)
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('admin', 'Director General', 'admin@neonnightrun.com')}
+                  className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 rounded-xl text-xs font-bold text-center flex flex-col items-center justify-center transition-colors"
+                >
+                  <span>🛡️ Director Admin</span>
+                  <span className="text-[10px] text-slate-400 font-normal mt-0.5">Acceso Total</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('kits_staff', 'Módulo de Entrega', 'kits@neonnightrun.com')}
-                className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-fuchsia-300 rounded-xl text-xs font-bold text-center flex flex-col items-center justify-center transition-colors"
-              >
-                <span>📦 Staff de Kits</span>
-                <span className="text-[10px] text-slate-400 font-normal mt-0.5">Escáner QR</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleQuickLogin('kits_staff', 'Módulo de Entreer', 'kits@neonnightrun.com')}
+                  className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-fuchsia-300 rounded-xl text-xs font-bold text-center flex flex-col items-center justify-center transition-colors"
+                >
+                  <span>📦 Staff de Kits</span>
+                  <span className="text-[10px] text-slate-400 font-normal mt-0.5">Escáner QR</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="text-center">
             <Link href="/" className="text-xs text-slate-400 hover:text-cyan-400 transition-colors">

@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const method = searchParams.get('method') || undefined;
     const search = searchParams.get('search') || undefined;
 
-    const orders = getOrders({ status, method, search });
+    const orders = await getOrders({ status, method, search });
     return NextResponse.json({ success: true, data: orders });
   } catch (error) {
     console.error('Error fetching orders:', error);

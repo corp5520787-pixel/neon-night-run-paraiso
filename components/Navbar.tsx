@@ -9,17 +9,6 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 bg-[#060913]/90 backdrop-blur-md border-b border-cyan-500/20">
-      {/* Demo mode banner */}
-      <div className="bg-gradient-to-r from-cyan-950 via-slate-900 to-purple-950 px-4 py-1.5 text-xs text-center text-cyan-300 border-b border-cyan-500/30 flex items-center justify-center gap-2">
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500 text-slate-950 uppercase tracking-wider">
-          Modo Demo Local
-        </span>
-        <span>Carrera 6K: Sábado 7 de Noviembre 2026 · Paraíso, Tabasco</span>
-        <Link href="/admin" className="underline hover:text-white font-medium text-cyan-400 ml-2 hidden sm:inline">
-          Acceso Administrador / Kits
-        </Link>
-      </div>
-
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-3 group">
@@ -40,17 +29,11 @@ export default function Navbar() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300">
-          <Link href="/#experiencia" className="hover:text-cyan-400 transition-colors">
-            Experiencia
-          </Link>
           <Link href="/#kit" className="hover:text-cyan-400 transition-colors">
             Kit y Medalla
           </Link>
           <Link href="/#etapas" className="hover:text-cyan-400 transition-colors">
             Precios y Cupos
-          </Link>
-          <Link href="/#ruta" className="hover:text-cyan-400 transition-colors">
-            Ruta 6K
           </Link>
           <Link href="/#faq" className="hover:text-cyan-400 transition-colors">
             Preguntas
@@ -87,13 +70,6 @@ export default function Navbar() {
         <div className="md:hidden bg-[#0b1120] border-b border-cyan-500/30 px-4 pt-3 pb-6 space-y-3">
           <div className="flex flex-col gap-2.5 text-sm font-medium text-slate-200">
             <Link
-              href="/#experiencia"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-cyan-400"
-            >
-              Experiencia Neón
-            </Link>
-            <Link
               href="/#kit"
               onClick={() => setMobileMenuOpen(false)}
               className="px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-cyan-400"
@@ -106,13 +82,6 @@ export default function Navbar() {
               className="px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-cyan-400"
             >
               Precios y Etapas
-            </Link>
-            <Link
-              href="/#ruta"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-cyan-400"
-            >
-              Ruta 6K y Puntos de Animación
             </Link>
             <Link
               href="/#faq"

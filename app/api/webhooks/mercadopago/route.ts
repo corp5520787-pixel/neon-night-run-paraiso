@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const eventType = topic || body?.type || body?.action || 'payment';
 
     // Log the webhook reception
-    recordWebhookLog({
+    await recordWebhookLog({
       provider: 'mercadopago',
       eventType,
       externalId: String(paymentId || 'unknown'),
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     
     // Find matching order by external reference or paymentId
     if (verification.externalReference) {
-      const orders = getOrders();
+      const orders = await getOrders();
       const matchedOrder = orders.find(
         o => o.orderNumber === verification.externalReference || o.paymentReference.includes(verification.externalReference!)
       );

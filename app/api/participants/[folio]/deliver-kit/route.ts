@@ -7,7 +7,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fol
     const body = await req.json();
     const { staffEmail, staffName, notes } = body;
 
-    const result = markKitDelivered(
+    const result = await markKitDelivered(
       folio,
       {
         email: staffEmail || 'staff@neonnightrunparaiso.mx',

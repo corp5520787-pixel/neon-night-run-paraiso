@@ -17,6 +17,7 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  Trash2,
 } from 'lucide-react';
 import { Order } from '@/lib/types';
 
@@ -31,6 +32,7 @@ export default function AdminPagosPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [processing, setProcessing] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
+  const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -69,6 +71,26 @@ export default function AdminPagosPage() {
       }
     } catch {
       setModalError('Error de conexión con el servidor');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const confirmDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    setProcessing(true);
+    try {
+      const res = await fetch(`/api/orders/${orderToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setOrderToDelete(null);
+        fetchOrders();
+      } else {
+        alert('Error al eliminar la orden');
+      }
+    } catch (err) {
+      console.error('Error deleting order:', err);
     } finally {
       setProcessing(false);
     }
@@ -222,6 +244,13 @@ export default function AdminPagosPage() {
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Link>
+                        <button
+                          onClick={() => setOrderToDelete(o)}
+                          className="p-1.5 bg-rose-950/40 hover:bg-rose-900 border border-rose-500/30 text-rose-400 rounded-lg transition-colors"
+                          title="Eliminar Orden"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -333,6 +362,50 @@ export default function AdminPagosPage() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Custom Delete Confirmation Modal */}
+      {orderToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-rose-950/30">
+            <div className="flex items-center gap-3 text-rose-400 mb-4">
+              <div className="p-2 bg-rose-950/50 rounded-xl border border-rose-500/20">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-white">¿Seguro que quieres eliminar?</h3>
+            </div>
+            
+            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
+              Estás a punto de eliminar por completo la orden <strong className="text-white">{orderToDelete.orderNumber}</strong> de <strong className="text-white">{orderToDelete.customerName}</strong>.
+              <br />
+              <span className="text-rose-400 text-xs mt-2 block font-medium">
+                Esta acción cancelará el pago y eliminará permanentemente a todos los {orderToDelete.participantsCount} corredores asociados. ¡Esta acción es irreversible!
+              </span>
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setOrderToDelete(null)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteOrder}
+                disabled={processing}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl flex items-center gap-1.5 transition-colors shadow-lg shadow-rose-950/40 text-sm"
+              >
+                {processing ? (
+                  <Loader2 className="w-4 h-4 animate-spin animate-spin text-white" />
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+                <span>Eliminar</span>
+              </button>
             </div>
           </div>
         </div>

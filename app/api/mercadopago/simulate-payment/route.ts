@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'orderId es requerido' }, { status: 400 });
     }
 
-    const order = getOrder(orderId);
+    const order = await getOrder(orderId);
     if (!order) {
       return NextResponse.json({ success: false, error: 'Orden no encontrada' }, { status: 404 });
     }

@@ -19,6 +19,7 @@ import {
   X,
   Layers,
   Award,
+  Loader2,
 } from 'lucide-react';
 import { getStoredAdminUser, setStoredAdminUser } from '@/lib/admin-auth';
 import { AdminUser } from '@/lib/types';
@@ -28,29 +29,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // If login page, don't wrap with navigation
-    if (pathname === '/admin/login') return;
+    if (pathname === '/admin/login') {
+      setLoading(false);
+      return;
+    }
 
     const stored = getStoredAdminUser();
     if (!stored) {
-      // Auto assign default admin if not logged in
-      const defaultUser: AdminUser = {
-        id: 'admin-auto',
-        email: 'admin@neonnightrun.com',
-        name: 'Administrador General',
-        role: 'admin',
-      };
-      setStoredAdminUser(defaultUser);
-      setUser(defaultUser);
+      router.push('/admin/login');
     } else {
       setUser(stored);
+      setLoading(false);
     }
-  }, [pathname]);
+  }, [pathname, router]);
 
   if (pathname === '/admin/login') {
     return <>{children}</>;
+  }
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-[#060913] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
+      </div>
+    );
   }
 
   const handleLogout = () => {
