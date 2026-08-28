@@ -538,35 +538,41 @@ async function ensureSeeded() {
       }
     }
 
-    // 4. Seed Orders, Participants & Logs if orders is empty
-    const ordersCol = collection(db, 'orders');
-    const ordersSnap = await getDocs(query(ordersCol, limit(1)));
-    if (ordersSnap.empty) {
-      const seed = generateSeedState();
-      
-      // Seed orders (exclude related participants field)
-      for (const order of seed.orders) {
-        const { participants, ...orderData } = order;
-        await setDoc(doc(db, 'orders', order.id), orderData);
-      }
+    // 4. Seed Orders, Participants & Logs if we haven't completed the initial seed yet
+    const seedStatusRef = doc(db, 'config', 'seed_status');
+    const seedStatusSnap = await getDoc(seedStatusRef);
+    if (!seedStatusSnap.exists()) {
+      const ordersCol = collection(db, 'orders');
+      const ordersSnap = await getDocs(query(ordersCol, limit(1)));
+      if (ordersSnap.empty) {
+        const seed = generateSeedState();
+        
+        // Seed orders (exclude related participants field)
+        for (const order of seed.orders) {
+          const { participants, ...orderData } = order;
+          await setDoc(doc(db, 'orders', order.id), orderData);
+        }
 
-      // Seed participants
-      for (const p of seed.participants) {
-        await setDoc(doc(db, 'participants', p.id), p);
-      }
+        // Seed participants
+        for (const p of seed.participants) {
+          await setDoc(doc(db, 'participants', p.id), p);
+        }
 
-      // Seed kit logs
-      for (const log of seed.kitLogs) {
-        await setDoc(doc(db, 'kit_logs', log.id), log);
-      }
+        // Seed kit logs
+        for (const log of seed.kitLogs) {
+          await setDoc(doc(db, 'kit_logs', log.id), log);
+        }
 
-      // Seed audit logs
-      for (const aud of seed.auditLogs) {
-        await setDoc(doc(db, 'audit_logs', aud.id), aud);
-      }
+        // Seed audit logs
+        for (const aud of seed.auditLogs) {
+          await setDoc(doc(db, 'audit_logs', aud.id), aud);
+        }
 
-      // Seed counter
-      await setDoc(doc(db, 'counters', 'folios'), { value: seed.nextFolioNumber });
+        // Seed counter
+        await setDoc(doc(db, 'counters', 'folios'), { value: seed.nextFolioNumber });
+      }
+      // Save seed status so it never runs again
+      await setDoc(seedStatusRef, { completed: true });
     }
   } catch (err) {
     console.error('Error seeding Firestore database:', err);
