@@ -240,7 +240,8 @@ export default function AdminParticipantesPage() {
         customerName: manualName.trim(),
         customerEmail: manualEmail.trim(),
         customerPhone: manualPhone.trim(),
-        paymentMethod: manualPaymentType === 'courtesy' ? 'demo' : 'transfer',
+        paymentMethod: manualPaymentType === 'courtesy' ? 'courtesy' : 'transfer',
+        paymentStatus: isApprovedDirectly ? 'approved' : 'pending',
         participants: [
           {
             fullName: manualName.trim(),
@@ -273,17 +274,7 @@ export default function AdminParticipantesPage() {
         throw new Error(data.error || 'Error al registrar participante.');
       }
 
-      const createdOrder = data.data.order;
       const createdRunner = data.data.participants?.[0];
-
-      // If approved directly (cash or direct transfer or courtesy), ensure status is approved in the database
-      if (isApprovedDirectly && createdOrder && createdOrder.paymentStatus !== 'approved') {
-        await fetch(`/api/orders/${createdOrder.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paymentStatus: 'approved' }),
-        });
-      }
 
       setModalSuccessMsg(`¡Participante registrado exitosamente! Folio: ${createdRunner?.folio || 'Asignado'}`);
       

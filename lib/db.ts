@@ -830,7 +830,8 @@ export interface CreateOrderParams {
   customerPhone: string;
   participants: ParticipantInput[];
   ambassadorCode?: string;
-  paymentMethod: 'mercadopago' | 'transfer' | 'demo';
+  paymentMethod: string;
+  paymentStatus?: PaymentStatus;
   transferReceiptUrl?: string;
 }
 
@@ -890,7 +891,7 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
   const now = new Date().toISOString();
 
   const isDemo = params.paymentMethod === 'demo';
-  const initialStatus: PaymentStatus = isDemo ? 'approved' : 'pending';
+  const initialStatus: PaymentStatus = params.paymentStatus || (isDemo ? 'approved' : 'pending');
 
   const order: Order = {
     id: orderId,
@@ -906,15 +907,15 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     discountAmount: totalDiscount,
     totalAmount,
     ambassadorCodeUsed: ambassadorObj?.code,
-    paymentMethod: params.paymentMethod,
+    paymentMethod: params.paymentMethod as any,
     paymentStatus: initialStatus,
     paymentReference: params.paymentMethod === 'transfer' ? `SPEI-${orderNumber}` : `MP-${orderNumber}`,
     transferReceiptUrl: params.transferReceiptUrl,
     transferReceiptUploadedAt: params.transferReceiptUrl ? now : undefined,
     createdAt: now,
     updatedAt: now,
-    confirmedAt: isDemo ? now : undefined,
-    confirmedBy: isDemo ? 'Simulador de Pagos Demo' : undefined,
+    confirmedAt: initialStatus === 'approved' ? now : undefined,
+    confirmedBy: initialStatus === 'approved' ? (isDemo ? 'Simulador de Pagos Demo' : 'Módulo Administrativo') : undefined,
   };
 
   const createdParticipants: Participant[] = [];

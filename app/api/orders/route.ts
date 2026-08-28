@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       participants,
       ambassadorCode,
       paymentMethod,
+      paymentStatus,
       transferReceiptUrl,
     } = body;
 
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
       participants,
       ambassadorCode,
       paymentMethod: paymentMethod || 'mercadopago',
+      paymentStatus,
       transferReceiptUrl,
     });
 
@@ -124,13 +126,13 @@ export async function POST(req: NextRequest) {
 
       order.mercadopagoPreferenceId = preferenceResult.preferenceId;
       order.mercadopagoInitPoint = preferenceResult.initPoint;
-    } else if (paymentMethod === 'demo' || order.paymentStatus === 'approved') {
-      // In demo mode or approved orders, trigger confirmation emails for all participants
+    } else if (order.paymentStatus === 'approved') {
+      // Direct approved orders (e.g. manual cash, courtesy, or confirmed transfer) get ONLY confirmation emails with QR
       for (const p of createdParticipants) {
         await sendConfirmationEmail({ order, participant: p });
       }
-    } else if (paymentMethod === 'transfer') {
-      // Send pending registration email instructing them to pay and send receipt via WhatsApp
+    } else {
+      // Pending orders get ONLY pending payment instruction emails
       for (const p of createdParticipants) {
         await sendPendingRegistrationEmail({ order, participant: p });
       }
