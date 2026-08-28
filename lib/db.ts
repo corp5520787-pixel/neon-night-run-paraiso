@@ -520,28 +520,29 @@ async function ensureSeeded() {
       await setDoc(configRef, defaultEventConfig);
     }
 
-    // 2. Seed Stages
-    const stagesCol = collection(db, 'stages');
-    const stagesSnap = await getDocs(query(stagesCol, limit(1)));
-    if (stagesSnap.empty) {
-      for (const stage of defaultPricingStages) {
-        await setDoc(doc(db, 'stages', stage.id), stage);
-      }
-    }
-
-    // 3. Seed Ambassadors
-    const ambCol = collection(db, 'ambassadors');
-    const ambSnap = await getDocs(query(ambCol, limit(1)));
-    if (ambSnap.empty) {
-      for (const amb of defaultAmbassadorCodes) {
-        await setDoc(doc(db, 'ambassadors', amb.id), amb);
-      }
-    }
-
-    // 4. Seed Orders, Participants & Logs if we haven't completed the initial seed yet
+    // 2. Check seed status first to prevent re-seeding when collections are cleared by admin
     const seedStatusRef = doc(db, 'config', 'seed_status');
     const seedStatusSnap = await getDoc(seedStatusRef);
     if (!seedStatusSnap.exists()) {
+      // Seed Stages
+      const stagesCol = collection(db, 'stages');
+      const stagesSnap = await getDocs(query(stagesCol, limit(1)));
+      if (stagesSnap.empty) {
+        for (const stage of defaultPricingStages) {
+          await setDoc(doc(db, 'stages', stage.id), stage);
+        }
+      }
+
+      // Seed Ambassadors
+      const ambCol = collection(db, 'ambassadors');
+      const ambSnap = await getDocs(query(ambCol, limit(1)));
+      if (ambSnap.empty) {
+        for (const amb of defaultAmbassadorCodes) {
+          await setDoc(doc(db, 'ambassadors', amb.id), amb);
+        }
+      }
+
+      // Seed Orders, Participants & Logs
       const ordersCol = collection(db, 'orders');
       const ordersSnap = await getDocs(query(ordersCol, limit(1)));
       if (ordersSnap.empty) {

@@ -22,7 +22,7 @@ export async function GET() {
     })).sort((a, b) => b.totalSales - a.totalSales);
 
     const stats: DashboardStats = {
-      totalRegistered: config.currentTotalRegistered,
+      totalRegistered: participants.filter(p => p.status !== 'cancelled').length,
       totalQuota: config.maxTotalQuota,
       totalRevenue: metrics.totalRevenue,
       totalConfirmed: confirmed.length,
