@@ -84,7 +84,7 @@ function ConfirmacionContent() {
           const json = await res.json();
           if (json.data) {
             setOrder(json.data);
-            if (json.data.paymentStatus === 'approved' || statusParam === 'approved') {
+            if (json.data.paymentStatus === 'approved' || statusParam === 'approved' || statusParam === 'transfer_pending') {
               // Trigger confetti celebration
               confetti({
                 particleCount: 80,
@@ -143,6 +143,20 @@ function ConfirmacionContent() {
       </div>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
+        {statusParam === 'transfer_pending' && (
+          <div className="no-print mb-8 p-6 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-950 to-cyan-950 border border-emerald-500 text-center space-y-3 shadow-2xl">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-wider">
+              🎉 ¡REGISTRO REALIZADO CON ÉXITO! 🎉
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight">
+              ¡Tu registro ha quedado guardado!
+            </h2>
+            <p className="text-slate-300 text-sm max-w-xl mx-auto leading-relaxed">
+              No es necesario registrarse otra vez. Tu lugar está temporalmente apartado. Para activarlo de forma definitiva, <strong className="text-emerald-400">envía tu comprobante de pago al número de WhatsApp 9331134405</strong>.
+            </p>
+          </div>
+        )}
+
         {/* Status Header Banner */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           {isApproved ? (
@@ -420,7 +434,7 @@ function ConfirmacionContent() {
               </div>
 
               <a
-                href={`https://wa.me/529931234567?text=${encodeURIComponent(
+                href={`https://wa.me/529331134405?text=${encodeURIComponent(
                   `Hola, adjunto mi comprobante de transferencia bancaria SPEI para la orden ${order.orderNumber} a nombre de ${order.customerName} por el total de $${order.totalAmount} MXN (Neon Night Run Paraíso 2026).`
                 )}`}
                 target="_blank"

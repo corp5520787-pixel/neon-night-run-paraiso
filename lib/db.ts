@@ -827,6 +827,26 @@ export interface CreateOrderParams {
   transferReceiptUrl?: string;
 }
 
+function cleanUndefined<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return null as unknown as T;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanUndefined(item)) as unknown as T;
+  }
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const key of Object.keys(obj as any)) {
+      const val = (obj as any)[key];
+      if (val !== undefined) {
+        cleaned[key] = cleanUndefined(val);
+      }
+    }
+    return cleaned as T;
+  }
+  return obj;
+}
+
 export async function createOrder(params: CreateOrderParams): Promise<{ order: Order; participants: Participant[] }> {
   await ensureSeeded();
   const stage = await getActivePricingStage(params.participants.length);
@@ -915,7 +935,7 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     };
 
     createdParticipants.push(p);
-    await setDoc(doc(db, 'participants', p.id), p);
+    await setDoc(doc(db, 'participants', p.id), cleanUndefined(p));
   }
 
   if (initialStatus === 'approved') {
@@ -934,7 +954,7 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
 
   order.participants = createdParticipants;
   const { participants, ...orderData } = order;
-  await setDoc(doc(db, 'orders', orderId), orderData);
+  await setDoc(doc(db, 'orders', orderId), cleanUndefined(orderData));
 
   await recordAuditLog(
     'ORDER_CREATED',

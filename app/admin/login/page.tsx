@@ -9,8 +9,11 @@ import { AdminRole, AdminUser } from '@/lib/types';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@neonnightrun.com');
-  const [password, setPassword] = useState('admin2026');
+  const defaultAdminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@neonnightrun.com';
+  const defaultStaffEmail = process.env.NEXT_PUBLIC_STAFF_EMAIL || 'kits@neonnightrun.com';
+
+  const [email, setEmail] = useState(defaultAdminEmail);
+  const [password, setPassword] = useState(process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin2026');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -143,7 +146,7 @@ export default function AdminLoginPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('admin', 'Director General', 'admin@neonnightrun.com')}
+                  onClick={() => handleQuickLogin('admin', 'Director General', defaultAdminEmail)}
                   className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 rounded-xl text-xs font-bold text-center flex flex-col items-center justify-center transition-colors"
                 >
                   <span>🛡️ Director Admin</span>
@@ -152,7 +155,7 @@ export default function AdminLoginPage() {
 
                 <button
                   type="button"
-                  onClick={() => handleQuickLogin('kits_staff', 'Módulo de Entreer', 'kits@neonnightrun.com')}
+                  onClick={() => handleQuickLogin('kits_staff', 'Módulo de Entreer', defaultStaffEmail)}
                   className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-fuchsia-300 rounded-xl text-xs font-bold text-center flex flex-col items-center justify-center transition-colors"
                 >
                   <span>📦 Staff de Kits</span>

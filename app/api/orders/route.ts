@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrders } from '@/lib/db';
 import { createMercadoPagoPreference } from '@/lib/mercadopago';
-import { sendConfirmationEmail } from '@/lib/email';
+import { sendConfirmationEmail, sendPendingRegistrationEmail } from '@/lib/email';
 import { ParticipantInput } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -90,6 +90,11 @@ export async function POST(req: NextRequest) {
       // In demo mode or approved orders, trigger confirmation emails for all participants
       for (const p of createdParticipants) {
         await sendConfirmationEmail({ order, participant: p });
+      }
+    } else if (paymentMethod === 'transfer') {
+      // Send pending registration email instructing them to pay and send receipt via WhatsApp
+      for (const p of createdParticipants) {
+        await sendPendingRegistrationEmail({ order, participant: p });
       }
     }
 

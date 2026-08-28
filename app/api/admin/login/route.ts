@@ -5,23 +5,25 @@ export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json();
 
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@neonnightrun.com';
     const adminPass = process.env.ADMIN_PASSWORD || 'admin2026';
+    const staffEmail = process.env.STAFF_EMAIL || 'kits@neonnightrun.com';
     const staffPass = process.env.STAFF_PASSWORD || 'kits2026';
 
-    if (email === 'admin@neonnightrun.com' && password === adminPass) {
+    if (email === adminEmail && password === adminPass) {
       const user: AdminUser = {
         id: 'admin-1',
-        email: 'admin@neonnightrun.com',
+        email: adminEmail,
         name: 'Director de Carrera',
         role: 'admin',
       };
       return NextResponse.json({ success: true, user });
     }
 
-    if (email === 'kits@neonnightrun.com' && password === staffPass) {
+    if (email === staffEmail && password === staffPass) {
       const user: AdminUser = {
         id: 'staff-1',
-        email: 'kits@neonnightrun.com',
+        email: staffEmail,
         name: 'Staff Entrega de Kits',
         role: 'kits_staff',
       };

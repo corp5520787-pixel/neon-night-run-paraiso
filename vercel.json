@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/cron-reminders?type=3days&token=neon-nightrun-secret-2026",
+      "schedule": "0 16 4 11 *"
+    },
+    {
+      "path": "/api/admin/cron-reminders?type=1day&token=neon-nightrun-secret-2026",
+      "schedule": "0 16 6 11 *"
+    },
+    {
+      "path": "/api/admin/cron-reminders?type=1hour&token=neon-nightrun-secret-2026",
+      "schedule": "30 0 8 11 *"
+    }
+  ]
+}
