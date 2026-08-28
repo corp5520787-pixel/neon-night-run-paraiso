@@ -1548,3 +1548,29 @@ export async function deleteParticipant(participantId: string, userEmail = 'admi
   return true;
 }
 
+export async function findDuplicateParticipant(email: string, fullName: string): Promise<{ type: 'email' | 'name'; participant: Participant } | null> {
+  await ensureSeeded();
+  const snap = await getDocs(collection(db, 'participants'));
+  const participants = snap.docs.map(doc => doc.data() as Participant);
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanName = fullName.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  for (const p of participants) {
+    if (p.status === 'cancelled') continue;
+
+    const pEmail = p.email.trim().toLowerCase();
+    const pName = p.fullName.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    if (pEmail === cleanEmail) {
+      return { type: 'email', participant: p };
+    }
+    if (pName === cleanName) {
+      return { type: 'name', participant: p };
+    }
+  }
+
+  return null;
+}
+
+

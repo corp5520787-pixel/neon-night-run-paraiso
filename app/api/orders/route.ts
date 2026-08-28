@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder, getOrders } from '@/lib/db';
+import { createOrder, getOrders, findDuplicateParticipant } from '@/lib/db';
 import { createMercadoPagoPreference } from '@/lib/mercadopago';
 import { sendConfirmationEmail, sendPendingRegistrationEmail } from '@/lib/email';
 import { ParticipantInput } from '@/lib/types';
@@ -48,6 +48,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate each runner individually
+    const seenEmails = new Set<string>();
+    const seenNames = new Set<string>();
+
     for (let i = 0; i < participants.length; i++) {
       const p = participants[i] as ParticipantInput;
       if (!p.fullName || !p.birthDate || !p.email || !p.phone || !p.shirtSize || !p.emergencyContact || !p.emergencyPhone) {
@@ -58,6 +61,41 @@ export async function POST(req: NextRequest) {
           },
           { status: 400 }
         );
+      }
+
+      const cleanEmail = p.email.trim().toLowerCase();
+      const cleanName = p.fullName.trim().toLowerCase().replace(/\s+/g, ' ');
+
+      // Check for repeated items in the same registration form
+      if (seenEmails.has(cleanEmail)) {
+        return NextResponse.json(
+          { success: false, error: `El correo electrónico "${p.email}" está repetido en este registro.` },
+          { status: 400 }
+        );
+      }
+      if (seenNames.has(cleanName)) {
+        return NextResponse.json(
+          { success: false, error: `El corredor "${p.fullName}" está repetido en este registro.` },
+          { status: 400 }
+        );
+      }
+      seenEmails.add(cleanEmail);
+      seenNames.add(cleanName);
+
+      // Check against Firestore database for existing registered runners (status !== 'cancelled')
+      const duplicate = await findDuplicateParticipant(p.email, p.fullName);
+      if (duplicate) {
+        if (duplicate.type === 'email') {
+          return NextResponse.json(
+            { success: false, error: `El correo electrónico "${p.email}" ya está registrado para otro corredor de la carrera.` },
+            { status: 400 }
+          );
+        } else {
+          return NextResponse.json(
+            { success: false, error: `El corredor "${p.fullName}" ya se encuentra registrado e inscrito en la carrera.` },
+            { status: 400 }
+          );
+        }
       }
     }
 
