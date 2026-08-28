@@ -152,7 +152,7 @@ function ConfirmacionContent() {
               ¡Tu registro ha quedado guardado!
             </h2>
             <p className="text-slate-300 text-sm max-w-xl mx-auto leading-relaxed">
-              No es necesario registrarse otra vez. Tu lugar está temporalmente apartado. Para activarlo de forma definitiva, <strong className="text-emerald-400">envía tu comprobante de pago al número de WhatsApp 9331134405</strong>.
+              No es necesario registrarse otra vez. Tu lugar está temporalmente apartado. Para activarlo de forma definitiva, <strong className="text-emerald-400">envía tu comprobante de pago al número de WhatsApp 9331134406</strong>.
             </p>
           </div>
         )}
@@ -434,7 +434,7 @@ function ConfirmacionContent() {
               </div>
 
               <a
-                href={`https://wa.me/529331134405?text=${encodeURIComponent(
+                href={`https://wa.me/529331134406?text=${encodeURIComponent(
                   `Hola, adjunto mi comprobante de transferencia bancaria SPEI para la orden ${order.orderNumber} a nombre de ${order.customerName} por el total de $${order.totalAmount} MXN (Neon Night Run Paraíso 2026).`
                 )}`}
                 target="_blank"

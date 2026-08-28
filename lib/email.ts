@@ -97,7 +97,7 @@ export async function sendPendingRegistrationEmail(params: SendConfirmationEmail
 
   const isRealKey = resendApiKey && !resendApiKey.includes('00000000') && resendApiKey.startsWith('re_');
 
-  const waLink = `https://wa.me/529331134405?text=${encodeURIComponent(
+  const waLink = `https://wa.me/529331134406?text=${encodeURIComponent(
     `Hola, adjunto mi comprobante de transferencia bancaria SPEI para la orden ${order.orderNumber} a nombre de ${order.customerName} por el total de $${order.totalAmount} MXN (Neon Night Run Paraíso 2026).`
   )}`;
 
@@ -117,7 +117,7 @@ export async function sendPendingRegistrationEmail(params: SendConfirmationEmail
         <div style="background-color: #1e1b4b; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #ff007f; text-align: left; line-height: 1.6;">
           <h3 style="color: #ff007f; margin: 0 0 12px 0; font-size: 16px; text-transform: uppercase; font-weight: 900;">⚠️ Pasos para confirmar tu lugar:</h3>
           <p style="margin: 5px 0; font-size: 14px;"><strong>1. Realiza tu transferencia bancaria SPEI</strong> por el total exacto.</p>
-          <p style="margin: 5px 0; font-size: 14px;"><strong>2. Envía tu captura o comprobante de pago por WhatsApp</strong> al número <strong style="color: #10b981; font-size: 16px;">9331134405</strong>.</p>
+          <p style="margin: 5px 0; font-size: 14px;"><strong>2. Envía tu captura o comprobante de pago por WhatsApp</strong> al número <strong style="color: #10b981; font-size: 16px;">9331134406</strong>.</p>
         </div>
 
         <div style="background-color: #060913; padding: 20px; border-radius: 12px; border: 1px solid #facc15; text-align: left; margin-bottom: 25px; font-size: 14px; line-height: 1.6;">
