@@ -8,6 +8,8 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
+  AlertCircle,
+  AlertTriangle,
   ExternalLink,
   Upload,
   Image as ImageIcon,
@@ -25,6 +27,7 @@ import { Sponsor } from '@/lib/types';
 export default function AdminSponsorsPage() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingSponsor, setEditingSponsor] = useState<Sponsor | null>(null);
@@ -43,16 +46,23 @@ export default function AdminSponsorsPage() {
 
   const fetchSponsors = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/sponsors');
       if (res.ok) {
         const data = await res.json();
-        if (data.data) {
+        if (data.success && data.data) {
           setSponsors(data.data);
+        } else {
+          setError(data.error || 'No se pudieron cargar los patrocinadores.');
         }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Error del servidor al obtener patrocinadores.');
       }
     } catch (err) {
       console.error('Error fetching sponsors:', err);
+      setError('No se pudo establecer conexión para consultar los patrocinadores.');
     } finally {
       setLoading(false);
     }
@@ -290,6 +300,26 @@ export default function AdminSponsorsPage() {
         <div className="flex items-center justify-center py-24 text-slate-400">
           <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mr-3" />
           <span className="text-sm font-medium">Cargando patrocinadores...</span>
+        </div>
+      ) : error ? (
+        <div className="text-center py-16 bg-[#0b1120] border border-rose-500/20 rounded-3xl p-8 max-w-xl mx-auto space-y-4">
+          <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center border border-rose-500/30 text-rose-400 mx-auto">
+            <AlertCircle className="w-6 h-6 animate-pulse" />
+          </div>
+          <h3 className="text-lg font-bold text-white">Error al cargar patrocinadores</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+            {error}. Tus patrocinadores e imágenes registradas están completamente seguros. Este inconveniente se debe temporalmente a que tu base de datos de Firebase alcanzó el límite diario de lecturas del plan gratuito (Spark).
+          </p>
+          <div className="text-[11px] text-slate-500 max-w-md mx-auto leading-normal bg-slate-900/60 p-3 rounded-xl border border-slate-800/80 text-left">
+            💡 Las cuotas se reinician de manera automática todos los días a la medianoche (hora del Pacífico - 1:00 AM hora CDMX) o puedes actualizar a un plan sin límites en tu consola de Firebase.
+          </div>
+          <button
+            onClick={fetchSponsors}
+            className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs rounded-xl inline-flex items-center gap-2 transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+            Reintentar cargar patrocinadores
+          </button>
         </div>
       ) : sponsors.length === 0 ? (
         <div className="text-center py-16 bg-[#0b1120] border border-slate-800 rounded-3xl p-8">

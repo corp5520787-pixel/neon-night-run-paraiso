@@ -31,6 +31,7 @@ import { Participant, ShirtSize } from '@/lib/types';
 export default function AdminParticipantesPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sizeFilter, setSizeFilter] = useState('all');
@@ -63,14 +64,21 @@ export default function AdminParticipantesPage() {
 
   const fetchParticipants = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/participants');
       if (res.ok) {
         const data = await res.json();
-        if (data.data) setParticipants(data.data);
+        if (data.data) {
+          setParticipants(data.data);
+        }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Error del servidor al obtener participantes.');
       }
     } catch (err) {
       console.error('Error fetching participants:', err);
+      setError('No se pudo establecer conexión para consultar participantes.');
     } finally {
       setLoading(false);
     }
@@ -418,7 +426,37 @@ export default function AdminParticipantesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80">
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center">
+                    <div className="flex items-center justify-center gap-2 text-cyan-400 font-semibold text-xs">
+                      <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+                      <span>Cargando corredores inscritos...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={8} className="py-12 px-6 text-center">
+                    <div className="max-w-md mx-auto space-y-4">
+                      <div className="text-rose-400 font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                        <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse" />
+                        <span>Error al cargar participantes</span>
+                      </div>
+                      <p className="text-slate-400 text-[11px] leading-relaxed">
+                        {error}. Si este error persiste, es muy probable que tu base de datos de Firebase haya excedido la cuota diaria gratuita del plan Spark. Las cuotas se restablecen automáticamente a la medianoche (hora del Pacífico) o al subir de plan en tu Consola de Firebase.
+                      </p>
+                      <button
+                        onClick={fetchParticipants}
+                        className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-[10px] font-bold inline-flex items-center gap-1.5 transition-colors"
+                      >
+                        <RefreshCw className="w-3 h-3 text-cyan-400" />
+                        Reintentar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-slate-500">
                     No se encontraron participantes con los filtros seleccionados.
