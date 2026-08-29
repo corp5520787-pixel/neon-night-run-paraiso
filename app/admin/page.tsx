@@ -23,17 +23,27 @@ import { DashboardStats, Order, Participant } from '@/lib/types';
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStats = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch('/api/admin/dashboard');
       if (res.ok) {
         const data = await res.json();
-        if (data.data) setStats(data.data);
+        if (data.success && data.data) {
+          setStats(data.data);
+        } else {
+          setError(data.error || 'No se pudieron cargar las métricas en tiempo real.');
+        }
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Error del servidor al obtener las métricas.');
       }
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
+      setError('No se pudo establecer conexión para consultar las métricas.');
     } finally {
       setLoading(false);
     }
@@ -43,13 +53,49 @@ export default function AdminDashboardPage() {
     fetchStats();
   }, []);
 
-  if (loading || !stats) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex items-center gap-3 text-cyan-400 text-sm font-semibold animate-pulse">
           <RefreshCw className="w-5 h-5 animate-spin" />
           <span>Cargando métricas en tiempo real...</span>
         </div>
+      </div>
+    );
+  }
+
+  if (error || !stats) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 bg-[#0b1120] rounded-3xl border border-rose-500/20 max-w-xl mx-auto space-y-6">
+        <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/30 text-rose-400">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">Métricas no disponibles</h2>
+          <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto">
+            {error || 'Ocurrió un inconveniente al consultar las estadísticas en tiempo real.'}
+          </p>
+        </div>
+        
+        <div className="w-full p-4 bg-slate-900/60 rounded-2xl border border-slate-800 text-left text-xs text-slate-300 space-y-2.5">
+          <p className="font-bold text-yellow-400 flex items-center gap-1.5">
+            ⚠️ Límite de Cuota de Firebase Excedido
+          </p>
+          <p className="leading-relaxed">
+            Tu base de datos de Firestore ha alcanzado el límite de lecturas gratuitas diarias del plan Spark de Firebase.
+          </p>
+          <p className="text-slate-400 leading-relaxed">
+            La cuota se restablece automáticamente cada día a la medianoche (hora del Pacífico), o puedes actualizar tu base de datos a un plan de pago sin límites en la consola de Firebase.
+          </p>
+        </div>
+
+        <button
+          onClick={fetchStats}
+          className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors mx-auto"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+          Reintentar cargar métricas
+        </button>
       </div>
     );
   }
