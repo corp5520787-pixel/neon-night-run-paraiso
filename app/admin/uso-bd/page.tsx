@@ -25,10 +25,8 @@ import { DatabaseUsageStats } from '@/lib/types';
 export default function AdminDatabaseUsagePage() {
   const [stats, setStats] = useState<DatabaseUsageStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchUsage = async () => {
@@ -51,30 +49,6 @@ export default function AdminDatabaseUsagePage() {
       setError('Fallo de red al consultar el uso de base de datos.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResetTelemetry = async () => {
-    if (!confirm('¿Deseas reiniciar el contador de operaciones a 0 para empezar una nueva medición limpia?')) {
-      return;
-    }
-    setResetting(true);
-    try {
-      const res = await fetch('/api/admin/db-usage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset' }),
-      });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setStats(json.data);
-        setSuccessMessage('Contador reiniciado exitosamente a 0.');
-        setTimeout(() => setSuccessMessage(null), 4000);
-      }
-    } catch (err) {
-      console.error('Error resetting telemetry:', err);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -138,16 +112,6 @@ export default function AdminDatabaseUsagePage() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => handleResetTelemetry()}
-            disabled={resetting || loading}
-            className="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 active:scale-95 transition-all text-slate-300 font-semibold text-xs rounded-xl flex items-center gap-2"
-            title="Reiniciar contador de operaciones a 0"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${resetting ? 'animate-spin' : ''}`} />
-            <span>{resetting ? 'Reiniciando...' : 'Calibrar a 0'}</span>
-          </button>
-
-          <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`px-3 py-2 rounded-xl text-xs font-semibold border flex items-center gap-2 transition-colors ${
               autoRefresh
@@ -156,7 +120,7 @@ export default function AdminDatabaseUsagePage() {
             }`}
           >
             <Activity className={`w-3.5 h-3.5 ${autoRefresh ? 'animate-pulse text-emerald-400' : ''}`} />
-            <span>{autoRefresh ? 'En vivo (15s)' : 'En pausa'}</span>
+            <span>{autoRefresh ? 'En vivo (cada 15s)' : 'En pausa'}</span>
           </button>
 
           <button
@@ -165,17 +129,10 @@ export default function AdminDatabaseUsagePage() {
             className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 active:scale-95 transition-all text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-950/50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualizar</span>
+            <span>Actualizar Ahora</span>
           </button>
         </div>
       </div>
-
-      {successMessage && (
-        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3 text-emerald-400 text-sm animate-fadeIn">
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <span>{successMessage}</span>
-        </div>
-      )}
 
       {error && (
         <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center gap-3 text-rose-400 text-sm">
