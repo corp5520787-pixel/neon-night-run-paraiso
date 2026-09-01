@@ -231,3 +231,47 @@ export interface DashboardStats {
   }[];
   recentParticipants: Participant[];
 }
+
+export interface DatabaseUsageStats {
+  date: string;
+  freeTier: {
+    maxDailyReads: number;
+    maxDailyWrites: number;
+    maxDailyDeletes: number;
+    maxStorageMB: number;
+  };
+  currentUsage: {
+    readsToday: number;
+    writesToday: number;
+    deletesToday: number;
+    readsPercentage: number;
+    writesPercentage: number;
+    deletesPercentage: number;
+    estimatedStorageMB: number;
+    storagePercentage: number;
+  };
+  tierStatus: 'free_safe' | 'free_warning' | 'blaze_active';
+  tierLabel: string;
+  estimatedExtraCostUSD: number;
+  estimatedExtraCostMXN: number;
+  collectionBreakdown: {
+    participantsCount: number;
+    ordersCount: number;
+    stagesCount: number;
+    ambassadorsCount: number;
+    logsCount: number;
+    totalDocuments: number;
+  };
+  optimizationsActive: {
+    inMemoryCacheTTL: string;
+    atomicCountersEnabled: boolean;
+    batchReadsOptimized: boolean;
+    serverSideOnly: boolean;
+  };
+  recentOperations: {
+    timestamp: string;
+    type: 'READ' | 'WRITE' | 'DELETE' | 'CACHE_HIT';
+    target: string;
+    count: number;
+  }[];
+}
