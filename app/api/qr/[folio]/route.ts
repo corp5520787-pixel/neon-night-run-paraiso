@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
+import { resolvePublicAppUrl } from '@/lib/app-url';
 
 export async function GET(
   req: NextRequest,
@@ -10,9 +11,8 @@ export async function GET(
     // Strip possible .png extension
     const cleanFolio = folio.replace(/\.png$/i, '').trim();
 
-    const host = req.headers.get('host') || 'neonnightrunparaiso.mx';
-    const proto = req.headers.get('x-forwarded-proto') || 'https';
-    const targetUrl = `${proto}://${host}/participante/${cleanFolio}`;
+    const baseUrl = resolvePublicAppUrl(req);
+    const targetUrl = `${baseUrl}/participante/${cleanFolio}`;
 
     // Generate PNG buffer
     const pngBuffer = await QRCode.toBuffer(targetUrl, {

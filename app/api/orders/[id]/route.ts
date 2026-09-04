@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getOrder, deleteOrder, updateOrderStatus } from '@/lib/db';
 import { sendConfirmationEmail } from '@/lib/email';
+import { resolvePublicAppUrl } from '@/lib/app-url';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -33,8 +34,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     // If approved, send confirmation emails with QR to each participant
     if (paymentStatus === 'approved' && updatedOrder.participants) {
+      const appUrl = resolvePublicAppUrl(req);
       for (const p of updatedOrder.participants) {
-        await sendConfirmationEmail({ order: updatedOrder, participant: p });
+        await sendConfirmationEmail({ order: updatedOrder, participant: p, appUrl });
       }
     }
 

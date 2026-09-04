@@ -1,8 +1,10 @@
 import { Order, Participant } from './types';
+import { resolvePublicAppUrl } from './app-url';
 
 export interface SendConfirmationEmailParams {
   order: Order;
   participant: Participant;
+  appUrl?: string;
 }
 
 /**
@@ -16,8 +18,8 @@ export async function sendConfirmationEmail(params: SendConfirmationEmailParams)
 
   const isRealKey = resendApiKey && !resendApiKey.includes('00000000') && resendApiKey.startsWith('re_');
 
-  // Compute public URLs for ticket and QR code image
-  const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://neonnightrunparaiso.mx';
+  // Compute public URLs for ticket and QR code image using verified active domain
+  const rawAppUrl = params.appUrl || resolvePublicAppUrl();
   const appUrl = rawAppUrl.replace(/\/$/, '');
   const ticketUrl = `${appUrl}/participante/${participant.folio}`;
   
@@ -66,10 +68,14 @@ export async function sendConfirmationEmail(params: SendConfirmationEmailParams)
         </p>
 
         <!-- BOTÓN DIRECTO PARA ABRIR EL BOLETO DIGITAL EN LÍNEA -->
-        <div style="margin: 25px 0;">
-          <a href="${ticketUrl}" target="_blank" style="background-color: #00f3ff; color: #060913; font-weight: 900; font-size: 14px; padding: 14px 28px; border-radius: 12px; text-decoration: none; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.4);">
+        <div style="margin: 28px 0 20px 0;">
+          <a href="${ticketUrl}" target="_blank" style="background-color: #00f3ff; color: #060913; font-weight: 900; font-size: 15px; padding: 15px 32px; border-radius: 12px; text-decoration: none; display: inline-block; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(0, 243, 255, 0.4);">
             📲 Ver mi Boleto Digital y QR en Línea
           </a>
+          <p style="margin: 14px 0 0 0; font-size: 12px; color: #94a3b8; word-break: break-all; line-height: 1.5;">
+            O abre directamente este enlace en tu navegador:<br/>
+            <a href="${ticketUrl}" target="_blank" style="color: #00f3ff; text-decoration: underline; font-weight: bold;">${ticketUrl}</a>
+          </p>
         </div>
 
         <div style="text-align: left; margin-top: 25px; background-color: #1e293b; padding: 20px; border-radius: 12px; font-size: 14px; line-height: 1.6; border-left: 4px solid #ff007f;">

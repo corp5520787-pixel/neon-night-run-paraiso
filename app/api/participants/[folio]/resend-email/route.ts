@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getParticipantByFolioOrQr, getOrder, updateParticipant, recordAuditLog } from '@/lib/db';
 import { sendConfirmationEmail } from '@/lib/email';
+import { resolvePublicAppUrl } from '@/lib/app-url';
 
 export async function POST(
   req: NextRequest,
@@ -41,7 +42,8 @@ export async function POST(
       };
     }
 
-    const result = await sendConfirmationEmail({ order, participant });
+    const appUrl = resolvePublicAppUrl(req);
+    const result = await sendConfirmationEmail({ order, participant, appUrl });
 
     const nowIso = new Date().toISOString();
     // Update participant's email timestamp in DB

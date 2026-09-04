@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOrder, getOrders, findDuplicateParticipant } from '@/lib/db';
 import { createMercadoPagoPreference } from '@/lib/mercadopago';
 import { sendConfirmationEmail, sendPendingRegistrationEmail } from '@/lib/email';
+import { resolvePublicAppUrl } from '@/lib/app-url';
 import { ParticipantInput } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -112,9 +113,7 @@ export async function POST(req: NextRequest) {
       transferReceiptUrl,
     });
 
-    const host = req.headers.get('host') || 'localhost:3000';
-    const protocol = req.headers.get('x-forwarded-proto') || 'http';
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+    const baseUrl = resolvePublicAppUrl(req);
 
     let preferenceResult = null;
 
@@ -129,12 +128,12 @@ export async function POST(req: NextRequest) {
     } else if (order.paymentStatus === 'approved') {
       // Direct approved orders (e.g. manual cash, courtesy, or confirmed transfer) get ONLY confirmation emails with QR
       for (const p of createdParticipants) {
-        await sendConfirmationEmail({ order, participant: p });
+        await sendConfirmationEmail({ order, participant: p, appUrl: baseUrl });
       }
     } else {
       // Pending orders get ONLY pending payment instruction emails
       for (const p of createdParticipants) {
-        await sendPendingRegistrationEmail({ order, participant: p });
+        await sendPendingRegistrationEmail({ order, participant: p, appUrl: baseUrl });
       }
     }
 

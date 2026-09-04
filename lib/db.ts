@@ -14,6 +14,7 @@ import {
   DatabaseUsageStats,
 } from './types';
 import { generateParticipantToken, generateQRCodeDataUrl } from './qr';
+import { resolvePublicAppUrl } from './app-url';
 import { db } from './firebase';
 import { 
   collection, 
@@ -1145,7 +1146,7 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     const folio = formatFolioNumber(folioNumber);
     const qrToken = generateParticipantToken(folio);
     
-    const qrCodeDataUrl = await generateQRCodeDataUrl(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/participante/${folio}`);
+    const qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${folio}`);
 
     const p: Participant = {
       ...input,
@@ -1295,7 +1296,7 @@ export async function updateOrderStatus(
       const p = d.data() as Participant;
       p.status = 'confirmed';
       if (!p.qrCodeDataUrl) {
-        p.qrCodeDataUrl = await generateQRCodeDataUrl(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/participante/${p.folio}`);
+        p.qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${p.folio}`);
       }
       await setDoc(doc(db, 'participants', p.id), p);
     }
