@@ -147,6 +147,8 @@ export interface Participant extends ParticipantInput {
   status: 'confirmed' | 'pending' | 'cancelled';
   unitPrice: number;
   discountApplied: number;
+  lastEmailSentAt?: string;
+  emailSentCount?: number;
 }
 
 export interface Order {

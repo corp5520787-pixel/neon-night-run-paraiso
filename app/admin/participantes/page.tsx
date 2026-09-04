@@ -25,6 +25,7 @@ import {
   Ticket,
   QrCode,
   Banknote,
+  Mail,
 } from 'lucide-react';
 import { Participant, ShirtSize } from '@/lib/types';
 
@@ -42,6 +43,9 @@ export default function AdminParticipantesPage() {
   const [showCourtesyModal, setShowCourtesyModal] = useState(false);
   const [submittingModal, setSubmittingModal] = useState(false);
   const [participantToDelete, setParticipantToDelete] = useState<Participant | null>(null);
+  const [resendingEmailFolio, setResendingEmailFolio] = useState<string | null>(null);
+  const [recentlySentFolio, setRecentlySentFolio] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   // Manual / Courtesy form states
   const [showManualModal, setShowManualModal] = useState(false);
@@ -216,6 +220,52 @@ export default function AdminParticipantesPage() {
     }
   };
 
+  const handleResendEmail = async (p: Participant) => {
+    setResendingEmailFolio(p.folio);
+    try {
+      const res = await fetch(`/api/participants/${p.folio}/resend-email`, {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setRecentlySentFolio(p.folio);
+        setSuccessNotification(`¡El correo se envió con éxito! (QR enviado a ${p.email})`);
+        setFeedbackMessage(`¡El correo se envió con éxito! Código QR y folio ${p.folio} enviados a ${p.email}`);
+
+        // Update participant state locally so the UI immediately reflects the dispatch
+        setParticipants(prev =>
+          prev.map(item => {
+            if (item.folio === p.folio || item.id === p.id) {
+              return {
+                ...item,
+                lastEmailSentAt: new Date().toISOString(),
+                emailSentCount: (item.emailSentCount || 1) + 1,
+              };
+            }
+            return item;
+          })
+        );
+
+        setTimeout(() => {
+          setRecentlySentFolio(null);
+        }, 5000);
+
+        setTimeout(() => {
+          setSuccessNotification(null);
+        }, 6000);
+      } else {
+        setSuccessNotification(data.error || 'Error al reenviar el correo.');
+        setTimeout(() => setSuccessNotification(null), 5000);
+      }
+    } catch (err) {
+      console.error('Error resending email:', err);
+      setSuccessNotification('Error de conexión al reenviar el correo.');
+      setTimeout(() => setSuccessNotification(null), 5000);
+    } finally {
+      setResendingEmailFolio(null);
+    }
+  };
+
   // Helper to compute age from birthdate
   const computeAge = (birthDateString: string): number => {
     if (!birthDateString) return 25;
@@ -310,9 +360,22 @@ export default function AdminParticipantesPage() {
     <div className="space-y-6 relative">
       {/* SUCCESS FLOATING NOTIFICATION */}
       {successNotification && (
-        <div className="fixed top-6 right-6 z-50 p-4 bg-emerald-950/90 border border-emerald-500/50 rounded-2xl shadow-2xl flex items-center gap-3 text-emerald-200 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 animate-pulse" />
-          <span>{successNotification}</span>
+        <div className="fixed top-6 right-6 z-50 p-4 max-w-md bg-[#051c14] border-2 border-emerald-400/80 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-emerald-200 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center flex-shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="text-white text-sm font-extrabold">{successNotification}</div>
+              <div className="text-[11px] text-emerald-300/80 font-normal">Código QR y boleto oficial despachados correctamente.</div>
+            </div>
+          </div>
+          <button
+            onClick={() => setSuccessNotification(null)}
+            className="p-1 rounded-lg text-emerald-400 hover:text-white hover:bg-emerald-900/50 transition-colors flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
@@ -353,6 +416,13 @@ export default function AdminParticipantesPage() {
           </button>
         </div>
       </div>
+
+      {feedbackMessage && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-3 text-emerald-400 text-sm animate-fadeIn">
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <span className="font-medium">{feedbackMessage}</span>
+        </div>
+      )}
 
       {/* SEARCH & FILTERS BAR */}
       <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -470,7 +540,19 @@ export default function AdminParticipantesPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-white text-sm">{p.fullName}</div>
-                      <div className="text-[11px] text-slate-400">{p.email} · {p.phone}</div>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                        <span>{p.email}</span>
+                        <span>·</span>
+                        <span>{p.phone}</span>
+                        {p.lastEmailSentAt && (
+                          <span
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold"
+                            title={`Correo enviado: ${new Date(p.lastEmailSentAt).toLocaleString()}`}
+                          >
+                            <Mail className="w-2.5 h-2.5 text-emerald-400" /> Correo QR enviado
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="text-slate-200">{p.category}</div>
@@ -509,6 +591,35 @@ export default function AdminParticipantesPage() {
                           title="Editar"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleResendEmail(p)}
+                          disabled={resendingEmailFolio === p.folio}
+                          className={`p-1.5 rounded-lg transition-all flex items-center gap-1.5 text-xs font-bold ${
+                            recentlySentFolio === p.folio
+                              ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30'
+                              : resendingEmailFolio === p.folio
+                              ? 'bg-slate-800 text-cyan-300 opacity-80 cursor-wait'
+                              : 'bg-slate-800 hover:bg-slate-700 text-emerald-400'
+                          }`}
+                          title={`Reenviar correo oficial con código QR a ${p.email}`}
+                        >
+                          {resendingEmailFolio === p.folio ? (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                              <span className="hidden xl:inline text-[11px] font-medium text-cyan-300">Enviando...</span>
+                            </>
+                          ) : recentlySentFolio === p.folio ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                              <span className="hidden xl:inline text-[11px] font-bold text-white">¡Enviado!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-3.5 h-3.5" />
+                              <span className="hidden xl:inline text-[11px] font-medium">Reenviar QR</span>
+                            </>
+                          )}
                         </button>
                         <Link
                           href={`/participante/${p.folio}`}

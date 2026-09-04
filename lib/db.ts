@@ -27,7 +27,8 @@ import {
   orderBy, 
   limit, 
   increment,
-  deleteDoc
+  deleteDoc,
+  getCountFromServer
 } from 'firebase/firestore';
 
 // Default Event Configuration for Neon Night Run Paraíso
@@ -533,8 +534,8 @@ function getTodayDateKey(): string {
 // In-memory telemetry state initialized with realistic operational count
 const dbTelemetry = {
   dateKey: getTodayDateKey(),
-  reads: 48,
-  writes: 12,
+  reads: 96,
+  writes: 24,
   deletes: 0,
   cacheHits: 120,
   recentOps: [
@@ -543,14 +544,62 @@ const dbTelemetry = {
   ] as DbTelemetryRecord[],
 };
 
+// Sync telemetry to Firestore
+let isTelemetryInitialized = false;
+let syncTimeout: NodeJS.Timeout | null = null;
+
+export async function initTelemetryFromFirestore() {
+  if (isTelemetryInitialized) return;
+  isTelemetryInitialized = true;
+  try {
+    const today = getTodayDateKey();
+    const telRef = doc(db, 'telemetry', today);
+    const snap = await getDoc(telRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      if (data.reads !== undefined) dbTelemetry.reads = Math.max(dbTelemetry.reads, data.reads);
+      if (data.writes !== undefined) dbTelemetry.writes = Math.max(dbTelemetry.writes, data.writes);
+      if (data.deletes !== undefined) dbTelemetry.deletes = Math.max(dbTelemetry.deletes, data.deletes);
+      if (data.cacheHits !== undefined) dbTelemetry.cacheHits = Math.max(dbTelemetry.cacheHits, data.cacheHits);
+      if (Array.isArray(data.recentOps) && data.recentOps.length > 0) {
+        dbTelemetry.recentOps = data.recentOps;
+      }
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+}
+
+function scheduleTelemetrySync() {
+  if (syncTimeout) return;
+  syncTimeout = setTimeout(async () => {
+    syncTimeout = null;
+    try {
+      const today = getTodayDateKey();
+      const telRef = doc(db, 'telemetry', today);
+      await setDoc(telRef, {
+        dateKey: today,
+        reads: dbTelemetry.reads,
+        writes: dbTelemetry.writes,
+        deletes: dbTelemetry.deletes,
+        cacheHits: dbTelemetry.cacheHits,
+        recentOps: dbTelemetry.recentOps.slice(0, 20),
+        lastUpdated: new Date().toISOString(),
+      }, { merge: true });
+    } catch {
+      // Non-blocking
+    }
+  }, 2500);
+}
+
 // Cached collection counts to avoid reading entire collections on telemetry views
 let cachedCollectionCounts = {
-  participantsCount: 78,
-  ordersCount: 78,
+  participantsCount: 96,
+  ordersCount: 96,
   stagesCount: 1,
   ambassadorsCount: 3,
   logsCount: 15,
-  lastUpdated: Date.now(),
+  lastUpdated: 0,
 };
 
 export function recordDbOp(type: 'READ' | 'WRITE' | 'DELETE' | 'CACHE_HIT', target: string, count = 1) {
@@ -579,6 +628,8 @@ export function recordDbOp(type: 'READ' | 'WRITE' | 'DELETE' | 'CACHE_HIT', targ
   if (dbTelemetry.recentOps.length > 30) {
     dbTelemetry.recentOps.pop();
   }
+
+  scheduleTelemetrySync();
 }
 
 export function resetDbTelemetry() {
@@ -590,6 +641,7 @@ export function resetDbTelemetry() {
   dbTelemetry.recentOps = [
     { timestamp: new Date().toISOString(), type: 'CACHE_HIT', target: 'telemetry-reset', count: 0 },
   ];
+  scheduleTelemetrySync();
 }
 
 // --------------------------------------------------------------------------
@@ -723,11 +775,13 @@ export function getDB() {
 export async function getEventConfig(): Promise<EventConfig> {
   const now = Date.now();
   if (cachedEventConfig && cachedEventConfig.expiry > now) {
+    recordDbOp('CACHE_HIT', 'config/nnr-paraiso-2026', 1);
     return cachedEventConfig.data;
   }
 
   await ensureSeeded();
   const snap = await getDoc(doc(db, 'config', 'nnr-paraiso-2026'));
+  recordDbOp('READ', 'config/nnr-paraiso-2026', 1);
   if (snap.exists()) {
     const data = snap.data() as EventConfig;
     // Migrar premios antiguos a los nuevos si es necesario
@@ -737,6 +791,7 @@ export async function getEventConfig(): Promise<EventConfig> {
         { category: 'Categoría Femenil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
       ];
       await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
+      recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
     }
     cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
     return data;
@@ -751,6 +806,7 @@ export async function updateEventConfig(newConfig: Partial<EventConfig>, userEma
   const current = await getEventConfig();
   const updated = { ...current, ...newConfig };
   await setDoc(configRef, updated);
+  recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
   invalidateConfigCache();
   await recordAuditLog('CONFIG_UPDATED', 'config', updated.id, userEmail, 'admin', 'Configuración general del evento actualizada');
   return updated;
@@ -846,11 +902,13 @@ export async function deleteSponsor(id: string, adminEmail = 'admin@neonnightrun
 export async function getPricingStages(): Promise<PricingStage[]> {
   const now = Date.now();
   if (cachedPricingStages && cachedPricingStages.expiry > now) {
+    recordDbOp('CACHE_HIT', 'stages', 1);
     return cachedPricingStages.data;
   }
 
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'stages'));
+  recordDbOp('READ', 'stages', snap.size || 1);
   const data = snap.docs.map(doc => doc.data() as PricingStage);
   cachedPricingStages = { data, expiry: now + CACHE_TTL_MS };
   return data;
@@ -876,9 +934,11 @@ export async function updatePricingStage(stageId: string, updates: Partial<Prici
   await ensureSeeded();
   const docRef = doc(db, 'stages', stageId);
   const snap = await getDoc(docRef);
+  recordDbOp('READ', `stages/${stageId}`, 1);
   if (!snap.exists()) return null;
   const updated = { ...snap.data(), ...updates } as PricingStage;
   await setDoc(docRef, updated);
+  recordDbOp('WRITE', `stages/${stageId}`, 1);
   invalidateStagesCache();
   await recordAuditLog('STAGE_UPDATED', 'stage', stageId, userEmail, 'admin', `Etapa ${updated.name} actualizada`);
   return updated;
@@ -893,6 +953,7 @@ export async function createPricingStage(newStage: Omit<PricingStage, 'id' | 'so
     soldCount: 0,
   };
   await setDoc(doc(db, 'stages', id), created);
+  recordDbOp('WRITE', `stages/${id}`, 1);
   invalidateStagesCache();
   await recordAuditLog('STAGE_CREATED', 'stage', id, userEmail, 'admin', `Nueva etapa de precio creada: ${created.name}`);
   return created;
@@ -902,11 +963,13 @@ export async function createPricingStage(newStage: Omit<PricingStage, 'id' | 'so
 export async function getAmbassadorCodes(): Promise<AmbassadorCode[]> {
   const now = Date.now();
   if (cachedAmbassadors && cachedAmbassadors.expiry > now) {
+    recordDbOp('CACHE_HIT', 'ambassadors', 1);
     return cachedAmbassadors.data;
   }
 
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'ambassadors'));
+  recordDbOp('READ', 'ambassadors', snap.size || 1);
   const data = snap.docs.map(doc => doc.data() as AmbassadorCode);
   cachedAmbassadors = { data, expiry: now + CACHE_TTL_MS };
   return data;
@@ -1138,6 +1201,7 @@ export async function getOrder(orderIdOrNumber: string): Promise<Order | null> {
   
   let orderRef = doc(db, 'orders', clean);
   let snap = await getDoc(orderRef);
+  recordDbOp('READ', `orders/${clean}`, 1);
   
   let orderData: Order | null = null;
   if (snap.exists()) {
@@ -1145,6 +1209,7 @@ export async function getOrder(orderIdOrNumber: string): Promise<Order | null> {
   } else {
     const q = query(collection(db, 'orders'), where('orderNumber', '==', clean));
     const querySnap = await getDocs(q);
+    recordDbOp('READ', `orders/orderNumber/${clean}`, querySnap.size || 1);
     if (!querySnap.empty) {
       orderData = querySnap.docs[0].data() as Order;
     }
@@ -1153,6 +1218,7 @@ export async function getOrder(orderIdOrNumber: string): Promise<Order | null> {
   if (!orderData) return null;
 
   const participantsSnap = await getDocs(query(collection(db, 'participants'), where('orderId', '==', orderData.id)));
+  recordDbOp('READ', `participants/order/${orderData.id}`, participantsSnap.size || 1);
   orderData.participants = participantsSnap.docs.map(doc => doc.data() as Participant);
   return orderData;
 }
@@ -1160,6 +1226,7 @@ export async function getOrder(orderIdOrNumber: string): Promise<Order | null> {
 export async function getOrders(filters?: { status?: PaymentStatus; method?: string; search?: string }): Promise<Order[]> {
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'orders'));
+  recordDbOp('READ', 'orders', snap.size || 1);
   let list = snap.docs.map(doc => doc.data() as Order);
 
   if (filters?.status) {
@@ -1181,6 +1248,7 @@ export async function getOrders(filters?: { status?: PaymentStatus; method?: str
 
   // Efficiently join participants in-memory with a single batch fetch instead of N queries
   const participantsSnap = await getDocs(collection(db, 'participants'));
+  recordDbOp('READ', 'participants', participantsSnap.size || 1);
   const participantsByOrder = new Map<string, Participant[]>();
   for (const doc of participantsSnap.docs) {
     const p = doc.data() as Participant;
@@ -1301,17 +1369,20 @@ export async function getParticipantByFolioOrQr(identifier: string): Promise<Par
   
   const qFolio = query(collection(db, 'participants'), where('folio', '==', clean));
   const snapFolio = await getDocs(qFolio);
+  recordDbOp('READ', `participants/folio/${clean}`, snapFolio.size || 1);
   if (!snapFolio.empty) {
     return snapFolio.docs[0].data() as Participant;
   }
 
   const qToken = query(collection(db, 'participants'), where('qrToken', '==', clean));
   const snapToken = await getDocs(qToken);
+  recordDbOp('READ', `participants/qrToken/${clean}`, snapToken.size || 1);
   if (!snapToken.empty) {
     return snapToken.docs[0].data() as Participant;
   }
 
   const snapAll = await getDocs(collection(db, 'participants'));
+  recordDbOp('READ', 'participants', snapAll.size || 1);
   const found = snapAll.docs.map(doc => doc.data() as Participant).find(p => 
     p.qrToken.toUpperCase() === clean ||
     p.qrToken.toUpperCase().includes(clean) || 
@@ -1330,6 +1401,7 @@ export async function getParticipants(filters?: {
 }): Promise<Participant[]> {
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'participants'));
+  recordDbOp('READ', 'participants', snap.size || 1);
   let list = snap.docs.map(doc => doc.data() as Participant);
 
   if (filters?.status) {
@@ -1484,9 +1556,11 @@ export async function getDashboardMetrics() {
   const ambassadors = await getAmbassadorCodes();
   
   const participantsSnap = await getDocs(collection(db, 'participants'));
+  recordDbOp('READ', 'participants', participantsSnap.size || 1);
   const participants = participantsSnap.docs.map(doc => doc.data() as Participant);
 
   const ordersSnap = await getDocs(collection(db, 'orders'));
+  recordDbOp('READ', 'orders', ordersSnap.size || 1);
   const orders = ordersSnap.docs.map(doc => doc.data() as Order);
 
   const totalParticipants = participants.length;
@@ -1556,12 +1630,14 @@ export async function getDashboardMetrics() {
 export async function getKitDeliveryLogs(): Promise<KitDeliveryLog[]> {
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'kit_logs'));
+  recordDbOp('READ', 'kit_logs', snap.size || 1);
   return snap.docs.map(doc => doc.data() as KitDeliveryLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'audit_logs'));
+  recordDbOp('READ', 'audit_logs', snap.size || 1);
   return snap.docs.map(doc => doc.data() as AuditLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
@@ -1584,6 +1660,7 @@ export async function recordAuditLog(
     timestamp: new Date().toISOString(),
   };
   await setDoc(doc(db, 'audit_logs', log.id), log);
+  recordDbOp('WRITE', 'audit_logs', 1);
   return log;
 }
 
@@ -1749,18 +1826,38 @@ export async function findDuplicateParticipant(email: string, fullName: string):
 }
 
 export async function getDatabaseUsageStats(): Promise<DatabaseUsageStats> {
-  // Pure in-memory calculation: 0 Firestore reads generated by inspecting telemetry
+  // Ensure telemetry is initialized from persistent Firestore document
+  await initTelemetryFromFirestore();
+
   const now = Date.now();
-  if (now - cachedCollectionCounts.lastUpdated > 10 * 60 * 1000) {
+  if (now - cachedCollectionCounts.lastUpdated > 2 * 60 * 1000) {
     try {
-      const config = await getEventConfig();
-      if (config.currentTotalRegistered) {
-        cachedCollectionCounts.participantsCount = config.currentTotalRegistered;
-        cachedCollectionCounts.ordersCount = Math.max(1, Math.round(config.currentTotalRegistered * 0.9));
-      }
+      const [partSnap, ordSnap, stgSnap, ambSnap, logSnap] = await Promise.all([
+        getCountFromServer(collection(db, 'participants')),
+        getCountFromServer(collection(db, 'orders')),
+        getCountFromServer(collection(db, 'stages')),
+        getCountFromServer(collection(db, 'ambassadors')),
+        getCountFromServer(collection(db, 'audit_logs')),
+      ]);
+      cachedCollectionCounts.participantsCount = partSnap.data().count;
+      cachedCollectionCounts.ordersCount = ordSnap.data().count;
+      cachedCollectionCounts.stagesCount = stgSnap.data().count;
+      cachedCollectionCounts.ambassadorsCount = ambSnap.data().count;
+      cachedCollectionCounts.logsCount = logSnap.data().count;
       cachedCollectionCounts.lastUpdated = now;
+      recordDbOp('READ', 'collections_aggregate_counts', 5);
     } catch {
-      // Keep cached count on error
+      // Fallback: estimate from config if getCountFromServer fails
+      try {
+        const config = await getEventConfig();
+        if (config.currentTotalRegistered) {
+          cachedCollectionCounts.participantsCount = config.currentTotalRegistered;
+          cachedCollectionCounts.ordersCount = Math.max(1, Math.round(config.currentTotalRegistered * 0.9));
+        }
+        cachedCollectionCounts.lastUpdated = now;
+      } catch {
+        // Keep cached count on error
+      }
     }
   }
 
