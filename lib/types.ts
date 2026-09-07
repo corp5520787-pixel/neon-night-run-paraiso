@@ -113,6 +113,7 @@ export interface EventConfig {
 }
 
 export type ShirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+export type RaceModality = 'Competitiva' | 'Recreativa';
 
 export interface ParticipantInput {
   fullName: string;
@@ -120,6 +121,7 @@ export interface ParticipantInput {
   age: number;
   gender: 'Femenil' | 'Varonil' | 'Otro';
   category: string;
+  modality?: RaceModality;
   email: string;
   phone: string;
   city: string;
@@ -147,6 +149,7 @@ export interface Participant extends ParticipantInput {
   status: 'confirmed' | 'pending' | 'cancelled';
   unitPrice: number;
   discountApplied: number;
+  modality?: RaceModality;
   lastEmailSentAt?: string;
   emailSentCount?: number;
 }
@@ -160,6 +163,7 @@ export interface Order {
   participantsCount: number;
   stageId: string;
   stageName: string;
+  modality?: string;
   unitPrice: number;
   subtotal: number;
   discountAmount: number;

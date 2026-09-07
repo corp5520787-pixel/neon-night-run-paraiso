@@ -1085,6 +1085,19 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     throw new Error('No hay suficientes lugares disponibles para el cupo solicitado.');
   }
 
+  // Determine individual prices based on modality
+  // Recreativa = $250 MXN, Competitiva = stage.price (typically $350 MXN)
+  const participantPrices: number[] = [];
+  let subtotal = 0;
+
+  for (let i = 0; i < params.participants.length; i++) {
+    const pInput = params.participants[i];
+    const isRecreativa = pInput.modality === 'Recreativa' || pInput.category?.toLowerCase().includes('recreativ');
+    const price = isRecreativa ? 250 : (stage.price || 350);
+    participantPrices.push(price);
+    subtotal += price;
+  }
+
   let discountPerPerson = 0;
   let totalDiscount = 0;
   let ambassadorObj: AmbassadorCode | undefined;
@@ -1094,15 +1107,15 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     if (val.valid && val.ambassador) {
       ambassadorObj = val.ambassador;
       if (ambassadorObj.discountType === 'percentage') {
-        discountPerPerson = (stage.price * ambassadorObj.discountValue) / 100;
+        totalDiscount = Math.round((subtotal * ambassadorObj.discountValue) / 100);
+        discountPerPerson = Math.round(totalDiscount / params.participants.length);
       } else {
         discountPerPerson = ambassadorObj.discountValue;
+        totalDiscount = discountPerPerson * params.participants.length;
       }
-      totalDiscount = discountPerPerson * params.participants.length;
     }
   }
 
-  const subtotal = stage.price * params.participants.length;
   const totalAmount = Math.max(0, subtotal - totalDiscount);
 
   const orderId = `ord-${Date.now()}`;
@@ -1113,6 +1126,43 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
   const isDemo = params.paymentMethod === 'demo';
   const initialStatus: PaymentStatus = params.paymentStatus || (isDemo ? 'approved' : 'pending');
 
+  const createdParticipants: Participant[] = [];
+
+  for (let i = 0; i < params.participants.length; i++) {
+    const input = params.participants[i];
+    const isRecreativa = input.modality === 'Recreativa' || input.category?.toLowerCase().includes('recreativ');
+    const assignedModality: 'Competitiva' | 'Recreativa' = isRecreativa ? 'Recreativa' : 'Competitiva';
+    const unitPrice = participantPrices[i];
+
+    const folioNumber = await getNextFolioNumber();
+    const folio = formatFolioNumber(folioNumber);
+    const qrToken = generateParticipantToken(folio);
+    
+    const qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${folio}`);
+
+    const p: Participant = {
+      ...input,
+      modality: assignedModality,
+      id: `p-${Date.now()}-${i}`,
+      orderId,
+      folio,
+      qrToken,
+      qrCodeDataUrl,
+      kitDelivered: false,
+      createdAt: now,
+      status: initialStatus === 'approved' ? 'confirmed' : 'pending',
+      unitPrice,
+      discountApplied: discountPerPerson,
+    };
+
+    createdParticipants.push(p);
+    await setDoc(doc(db, 'participants', p.id), cleanUndefined(p));
+  }
+
+  const allRecreativa = createdParticipants.every(p => p.modality === 'Recreativa');
+  const allCompetitiva = createdParticipants.every(p => p.modality === 'Competitiva');
+  const orderModality = allRecreativa ? 'Recreativa' : allCompetitiva ? 'Competitiva' : 'Mixta';
+
   const order: Order = {
     id: orderId,
     orderNumber,
@@ -1122,7 +1172,8 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     participantsCount: params.participants.length,
     stageId: stage.id,
     stageName: stage.name,
-    unitPrice: stage.price,
+    modality: orderModality,
+    unitPrice: params.participants.length === 1 ? participantPrices[0] : Math.round(subtotal / params.participants.length),
     subtotal,
     discountAmount: totalDiscount,
     totalAmount,
@@ -1137,34 +1188,6 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     confirmedAt: initialStatus === 'approved' ? now : undefined,
     confirmedBy: initialStatus === 'approved' ? (isDemo ? 'Simulador de Pagos Demo' : 'Módulo Administrativo') : undefined,
   };
-
-  const createdParticipants: Participant[] = [];
-
-  for (let i = 0; i < params.participants.length; i++) {
-    const input = params.participants[i];
-    const folioNumber = await getNextFolioNumber();
-    const folio = formatFolioNumber(folioNumber);
-    const qrToken = generateParticipantToken(folio);
-    
-    const qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${folio}`);
-
-    const p: Participant = {
-      ...input,
-      id: `p-${Date.now()}-${i}`,
-      orderId,
-      folio,
-      qrToken,
-      qrCodeDataUrl,
-      kitDelivered: false,
-      createdAt: now,
-      status: initialStatus === 'approved' ? 'confirmed' : 'pending',
-      unitPrice: stage.price,
-      discountApplied: discountPerPerson,
-    };
-
-    createdParticipants.push(p);
-    await setDoc(doc(db, 'participants', p.id), cleanUndefined(p));
-  }
 
   if (initialStatus === 'approved') {
     stage.soldCount += params.participants.length;

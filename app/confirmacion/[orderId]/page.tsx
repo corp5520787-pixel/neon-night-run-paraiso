@@ -243,9 +243,18 @@ function ConfirmacionContent() {
               {/* Ticket Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800 print:border-black">
                 <div>
-                  <span className="text-[11px] font-black text-cyan-400 uppercase tracking-wider block mb-1">
-                    Boleto Oficial de Corredor · 6 Kilómetros
-                  </span>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[11px] font-black text-cyan-400 uppercase tracking-wider block">
+                      Boleto Oficial de Corredor · 6 Kilómetros
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                      p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')
+                        ? 'bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40'
+                        : 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                    }`}>
+                      {p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ') ? '🌟 Recreativa' : '⚡ Competitiva'}
+                    </span>
+                  </div>
                   <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase print:text-black">
                     {p.fullName}
                   </h2>
@@ -281,6 +290,22 @@ function ConfirmacionContent() {
 
                 {/* Runner Details */}
                 <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-400 block">Modalidad:</span>
+                    <strong className={`text-sm block font-bold mt-0.5 ${
+                      p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ') ? 'text-fuchsia-300' : 'text-cyan-300'
+                    }`}>
+                      {p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')
+                        ? '🌟 Carrera Recreativa 3K ($250)'
+                        : '⚡ Carrera Competitiva ($350)'}
+                    </strong>
+                    <span className="text-[11px] text-slate-400 block mt-0.5">
+                      {p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')
+                        ? 'Incluye: Solo Medalla y Playera'
+                        : 'Incluye: Número, Medalla, Playera, Hidratación y Kit Neón'}
+                    </span>
+                  </div>
+
                   <div>
                     <span className="text-slate-400 block">Categoría:</span>
                     <strong className="text-white text-sm block font-bold mt-0.5 print:text-black">{p.category}</strong>

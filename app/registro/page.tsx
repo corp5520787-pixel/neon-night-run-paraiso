@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
@@ -20,8 +20,15 @@ import {
   Mail,
   MapPin,
   HeartHandshake,
+  Zap,
+  Sparkles,
+  Trophy,
+  Timer,
+  CheckCircle2,
+  Users,
+  X,
 } from 'lucide-react';
-import { PricingStage, EventConfig, AmbassadorCode, ShirtSize } from '@/lib/types';
+import { PricingStage, EventConfig, AmbassadorCode, ShirtSize, RaceModality } from '@/lib/types';
 import { defaultEventConfig, defaultPricingStages } from '@/lib/db';
 
 function calculateAge(birthDateString: string): number {
@@ -38,6 +45,10 @@ function calculateAge(birthDateString: string): number {
 
 function RegistroForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const rawModalidad = searchParams.get('modalidad');
+  const hasPreselectedModality = rawModalidad === 'Competitiva' || rawModalidad === 'Recreativa';
 
   // Event and pricing configuration
   const [config, setConfig] = useState<EventConfig>(defaultEventConfig);
@@ -47,6 +58,7 @@ function RegistroForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Single Runner Form State
+  const [modality, setModality] = useState<RaceModality>('Competitiva');
   const [fullName, setFullName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [gender, setGender] = useState<'Varonil' | 'Femenil'>('Varonil');
@@ -74,11 +86,32 @@ function RegistroForm() {
 
   const runnerAge = calculateAge(birthDate);
 
+  const handleSelectModality = (newModality: RaceModality) => {
+    setModality(newModality);
+    if (newModality === 'Recreativa') {
+      setCategory(gender === 'Femenil' ? 'Recreativa Femenil' : 'Recreativa Varonil');
+    } else {
+      setCategory(gender === 'Femenil' ? 'Femenil' : 'Varonil');
+    }
+  };
+
   const handleCopyClabe = (clabe: string) => {
     navigator.clipboard.writeText(clabe);
     setCopiedClabe(true);
     setTimeout(() => setCopiedClabe(false), 2500);
   };
+
+  // Read modality from query parameters on mount
+  useEffect(() => {
+    if (rawModalidad === 'Competitiva' || rawModalidad === 'Recreativa') {
+      setModality(rawModalidad);
+      if (rawModalidad === 'Recreativa') {
+        setCategory(gender === 'Femenil' ? 'Recreativa Femenil' : 'Recreativa Varonil');
+      } else {
+        setCategory(gender === 'Femenil' ? 'Femenil' : 'Varonil');
+      }
+    }
+  }, [rawModalidad, gender]);
 
   // Load initial event configuration
   useEffect(() => {
@@ -106,9 +139,11 @@ function RegistroForm() {
     loadData();
   }, []);
 
-  // Pricing calculations (Single participant)
+  // Pricing calculations (Single participant based on chosen modality)
   const activeStage = stages.find(s => s.active) || stages[0];
-  const unitPrice = activeStage?.price || 350;
+  const competitivePrice = activeStage?.price || 350;
+  const recreationalPrice = 250;
+  const unitPrice = modality === 'Recreativa' ? recreationalPrice : competitivePrice;
   const subtotal = unitPrice;
 
   let totalDiscount = 0;
@@ -192,6 +227,7 @@ function RegistroForm() {
             age: runnerAge,
             gender,
             category,
+            modality,
             email: email.trim(),
             phone: phone.trim(),
             city: city.trim() || 'Paraíso',
@@ -262,7 +298,235 @@ function RegistroForm() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* LEFT: Single Runner Form (2 Cols on lg) */}
           <div className="lg:col-span-2 space-y-6">
-            {/* 1. RUNNER INFORMATION */}
+            {/* PASO 1: COMPARATIVE MODALITY SELECTOR OR COMPACT PRESELECTED BANNER */}
+            {!hasPreselectedModality ? (
+              <div className="bg-[#0b1120] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-2">
+                  <div>
+                    <span className="text-[11px] font-black uppercase tracking-wider text-cyan-400 block mb-1">
+                      Paso 1 · Selecciona tu Experiencia
+                    </span>
+                    <h2 className="text-xl font-black text-white tracking-tight">
+                      ¿Cómo deseas correr la Neon Night Run?
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Elige entre la modalidad Competitiva con premiación y kit completo, o la modalidad Recreativa.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Side-by-Side Comparison Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* 1. Modalidad Competitiva */}
+                  <div
+                    onClick={() => handleSelectModality('Competitiva')}
+                    className={`cursor-pointer rounded-2xl p-5 sm:p-6 transition-all relative flex flex-col justify-between border-2 ${
+                      modality === 'Competitiva'
+                        ? 'bg-cyan-950/40 border-cyan-400 shadow-xl shadow-cyan-950/60 ring-1 ring-cyan-400'
+                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div>
+                      {/* Header Badges */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                          <Zap className="w-3 h-3 text-cyan-400" />
+                          Competitiva 6K
+                        </span>
+                      </div>
+
+                      {/* Title & Price */}
+                      <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                        Carrera Competitiva
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
+                        Para corredores que buscan superar su marca con paquete completo e hidratación oficial.
+                      </p>
+
+                      <div className="flex items-baseline gap-1.5 pb-4 border-b border-slate-800/80 mb-4">
+                        <span className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tight">
+                          ${competitivePrice}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400">MXN</span>
+                        <span className="text-[11px] text-cyan-400 ml-auto font-bold flex items-center gap-1">
+                          <Zap className="w-3.5 h-3.5" />
+                          Kit completo
+                        </span>
+                      </div>
+
+                      {/* Inclusions Checklist */}
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-white font-bold">Número de competidor</strong> oficial</span>
+                        </div>
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-white font-bold">Medalla conmemorativa</strong> oficial</span>
+                        </div>
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-white font-bold">Playera técnica deportiva oficial</strong> Dry-Fit</span>
+                        </div>
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-cyan-300 font-bold">Hidratación oficial</strong> durante el evento</span>
+                        </div>
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-cyan-300 font-bold">Kit Neón luminoso</strong> (pulseras, pintura y accesorios)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selector Radio / Indicator Button */}
+                    <div className="pt-5 mt-5 border-t border-slate-800/80">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectModality('Competitiva');
+                        }}
+                        className={`w-full py-2.5 px-4 rounded-xl text-xs font-black tracking-wide transition-all flex items-center justify-center gap-2 ${
+                          modality === 'Competitiva'
+                            ? 'bg-cyan-400 text-slate-950 shadow-md shadow-cyan-400/20'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {modality === 'Competitiva' ? (
+                          <>
+                            <Check className="w-4 h-4 stroke-[3]" />
+                            <span>Modalidad Seleccionada ($350 MXN)</span>
+                          </>
+                        ) : (
+                          <span>Seleccionar Competitiva ($350 MXN)</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Modalidad Recreativa / Convivencia */}
+                  <div
+                    onClick={() => handleSelectModality('Recreativa')}
+                    className={`cursor-pointer rounded-2xl p-5 sm:p-6 transition-all relative flex flex-col justify-between border-2 ${
+                      modality === 'Recreativa'
+                        ? 'bg-fuchsia-950/40 border-fuchsia-400 shadow-xl shadow-fuchsia-950/60 ring-1 ring-fuchsia-400'
+                        : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900'
+                    }`}
+                  >
+                    <div>
+                      {/* Header Badges */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40">
+                          <Sparkles className="w-3 h-3 text-fuchsia-400" />
+                          RECREATIVA 3K
+                        </span>
+                      </div>
+
+                      {/* Title & Price */}
+                      <h3 className="text-lg font-black text-white tracking-tight flex items-center gap-2">
+                        Carrera Recreativa 3K
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
+                        Modalidad libre para disfrutar trotando o caminando en una gran noche deportiva.
+                      </p>
+
+                      <div className="flex items-baseline gap-1.5 pb-4 border-b border-slate-800/80 mb-4">
+                        <span className="text-3xl sm:text-4xl font-black text-fuchsia-300 font-mono tracking-tight">
+                          ${recreationalPrice}
+                        </span>
+                        <span className="text-xs font-bold text-slate-400">MXN</span>
+                        <span className="text-[11px] text-fuchsia-400 ml-auto font-bold flex items-center gap-1">
+                          <Users className="w-3.5 h-3.5" />
+                          Solo Medalla y Playera
+                        </span>
+                      </div>
+
+                      {/* Inclusions Checklist: Solo Medalla y Playera */}
+                      <div className="space-y-2.5 text-xs">
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-fuchsia-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-white font-bold">Medalla conmemorativa</strong> al cruzar la meta</span>
+                        </div>
+                        <div className="flex items-start gap-2.5 text-slate-200">
+                          <CheckCircle2 className="w-4 h-4 text-fuchsia-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-white font-bold">Playera técnica deportiva oficial</strong> Dry-Fit</span>
+                        </div>
+                        <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-1 text-slate-400 text-[11px] mt-2">
+                          <div className="text-slate-300 font-bold mb-1">Nota importante:</div>
+                          <div>• <strong className="text-fuchsia-300">Solo incluye medalla y playera</strong>.</div>
+                          <div>• No incluye Kit Neón luminoso.</div>
+                          <div>• No incluye hidratación ni premiación a primeros lugares.</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selector Radio / Indicator Button */}
+                    <div className="pt-5 mt-5 border-t border-slate-800/80">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectModality('Recreativa');
+                        }}
+                        className={`w-full py-2.5 px-4 rounded-xl text-xs font-black tracking-wide transition-all flex items-center justify-center gap-2 ${
+                          modality === 'Recreativa'
+                            ? 'bg-fuchsia-400 text-slate-950 shadow-md shadow-fuchsia-400/20'
+                            : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white'
+                        }`}
+                      >
+                        {modality === 'Recreativa' ? (
+                          <>
+                            <Check className="w-4 h-4 stroke-[3]" />
+                            <span>Modalidad Seleccionada ($250 MXN)</span>
+                          </>
+                        ) : (
+                          <span>Seleccionar Recreativa 3K ($250 MXN)</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-[#0b1120] border border-cyan-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${
+                    modality === 'Competitiva'
+                      ? 'bg-cyan-950/80 border-cyan-500/40 text-cyan-400'
+                      : 'bg-fuchsia-950/80 border-fuchsia-500/40 text-fuchsia-400'
+                  }`}>
+                    {modality === 'Competitiva' ? <Zap className="w-6 h-6 text-cyan-400 animate-pulse" /> : <Sparkles className="w-6 h-6 text-fuchsia-400 animate-pulse" />}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-0.5">
+                      Modalidad de Carrera Seleccionada
+                    </span>
+                    <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2 flex-wrap">
+                      {modality === 'Competitiva' ? 'Carrera Competitiva 6K' : 'Carrera Recreativa 3K'}
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold font-mono border ${
+                        modality === 'Competitiva'
+                          ? 'bg-cyan-950/60 text-cyan-300 border-cyan-500/30'
+                          : 'bg-fuchsia-950/60 text-fuchsia-300 border-fuchsia-500/30'
+                      }`}>
+                        {modality === 'Competitiva' ? `$${competitivePrice} MXN` : `$${recreationalPrice} MXN`}
+                      </span>
+                    </h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.replace('/registro');
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-bold bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white rounded-xl transition-all text-center"
+                >
+                  Cambiar Modalidad
+                </button>
+              </div>
+            )}
+
+            {/* 2. RUNNER INFORMATION */}
             <div className="bg-[#0b1120] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
                 <div className="flex items-center gap-3">
@@ -271,7 +535,7 @@ function RegistroForm() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">Datos del Corredor</h2>
-                    <p className="text-xs text-slate-400">Información personal para tu kit, chip y cronometraje.</p>
+                    <p className="text-xs text-slate-400">Información personal para tu kit, folio y registro oficial.</p>
                   </div>
                 </div>
 
@@ -364,7 +628,11 @@ function RegistroForm() {
                     onChange={e => {
                       const val = e.target.value as 'Varonil' | 'Femenil';
                       setGender(val);
-                      setCategory(val);
+                      if (modality === 'Recreativa') {
+                        setCategory(val === 'Femenil' ? 'Recreativa Femenil' : 'Recreativa Varonil');
+                      } else {
+                        setCategory(val);
+                      }
                     }}
                     className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:border-cyan-400 text-sm font-semibold"
                   >
@@ -376,21 +644,41 @@ function RegistroForm() {
                 {/* Category */}
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Categoría Oficial (6K) *
+                    Categoría Oficial *
                   </label>
-                  <select
-                    value={category}
-                    onChange={e => {
-                      setCategory(e.target.value);
-                      if (e.target.value === 'Varonil' || e.target.value === 'Femenil') {
-                        setGender(e.target.value as 'Varonil' | 'Femenil');
-                      }
-                    }}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-bold focus:outline-none focus:border-cyan-400 text-sm"
-                  >
-                    <option value="Varonil">Varonil (Única 6K)</option>
-                    <option value="Femenil">Femenil (Única 6K)</option>
-                  </select>
+                  {modality === 'Competitiva' ? (
+                    <select
+                      value={category}
+                      onChange={e => {
+                        setCategory(e.target.value);
+                        if (e.target.value === 'Varonil' || e.target.value === 'Femenil') {
+                          setGender(e.target.value as 'Varonil' | 'Femenil');
+                        }
+                      }}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 font-bold focus:outline-none focus:border-cyan-400 text-sm"
+                    >
+                      <option value="Varonil">Varonil (Competitiva 6K)</option>
+                      <option value="Femenil">Femenil (Competitiva 6K)</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={category}
+                      onChange={e => {
+                        setCategory(e.target.value);
+                        if (e.target.value === 'Recreativa Varonil') setGender('Varonil');
+                        if (e.target.value === 'Recreativa Femenil') setGender('Femenil');
+                      }}
+                      className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-fuchsia-300 font-bold focus:outline-none focus:border-fuchsia-400 text-sm"
+                    >
+                      <option value="Recreativa Varonil">Recreativa Varonil (RECREATIVA 3K)</option>
+                      <option value="Recreativa Femenil">Recreativa Femenil (RECREATIVA 3K)</option>
+                    </select>
+                  )}
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    {modality === 'Competitiva'
+                      ? '⚡ Incluye número, medalla, playera, hidratación y kit neón.'
+                      : '🌟 Modalidad RECREATIVA 3K con medalla y playera.'}
+                  </span>
                 </div>
 
                 {/* Shirt Size */}
@@ -529,17 +817,41 @@ function RegistroForm() {
 
               {/* Stage & Items breakdown */}
               <div className="space-y-3 pb-4 border-b border-slate-800 text-xs text-slate-300">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-800/80">
+                  <span className="text-slate-400">Modalidad:</span>
+                  <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase flex items-center gap-1 ${
+                    modality === 'Competitiva'
+                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                      : 'bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40'
+                  }`}>
+                    {modality === 'Competitiva' ? (
+                      <>
+                        <Zap className="w-3 h-3 text-cyan-400" />
+                        Competitiva ($350)
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3 h-3 text-fuchsia-400" />
+                        Recreativa ($250)
+                      </>
+                    )}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span>Etapa activa:</span>
                   <strong className="text-white font-semibold">{activeStage?.name}</strong>
                 </div>
                 <div className="flex justify-between items-start gap-2">
                   <span>Concepto:</span>
-                  <span className="text-white font-medium text-right">1x Boleto 6K (Incluye playera, medalla, Kit Neon y número)</span>
+                  <span className="text-white font-medium text-right">
+                    {modality === 'Competitiva'
+                      ? '1x Carrera Competitiva 6K (Número, Medalla, Playera, Hidratación y Kit Neón)'
+                      : '1x RECREATIVA 3K (Solo Medalla y Playera)'}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span className="text-white font-mono">${subtotal} MXN</span>
+                  <span className="text-white font-mono font-bold">${subtotal} MXN</span>
                 </div>
 
                 {appliedAmbassador && (

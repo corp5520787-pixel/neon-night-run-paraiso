@@ -43,7 +43,12 @@ export async function sendConfirmationEmail(params: SendConfirmationEmailParams)
         <div style="background-color: #060913; padding: 20px; border-radius: 12px; margin: 25px 0; border: 2px dashed #00f3ff;">
           <p style="margin: 5px 0; color: #94a3b8; font-size: 12px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase;">FOLIO OFICIAL DE CORREDOR</p>
           <h3 style="font-size: 36px; color: #facc15; letter-spacing: 3px; margin: 5px 0; font-weight: 900;">${participant.folio}</h3>
-          <p style="margin: 8px 0 0 0; color: #ffffff; font-size: 14px;">Talla de Playera: <strong style="color: #00f3ff;">${participant.shirtSize}</strong> | Categoría: <strong style="color: #ff007f;">${participant.category}</strong></p>
+          <p style="margin: 8px 0 0 0; color: #ffffff; font-size: 14px;">
+            Modalidad: <strong style="color: ${participant.modality === 'Recreativa' ? '#ff007f' : '#00f3ff'};">${participant.modality === 'Recreativa' ? '🌟 Carrera Recreativa ($250)' : '⚡ Carrera Competitiva ($350)'}</strong> | Talla: <strong style="color: #00f3ff;">${participant.shirtSize}</strong> | Categoría: <strong style="color: #facc15;">${participant.category}</strong>
+          </p>
+          <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 12px;">
+            ${participant.modality === 'Recreativa' ? 'Tu inscripción recreativa incluye: Medalla conmemorativa y Playera oficial.' : 'Tu inscripción competitiva incluye: Medalla, Playera, Hidratación, Kit Neón y Premiación a primeros lugares.'}
+          </p>
         </div>
 
         <!-- CÓDIGO QR CON ENCAPSULACIÓN COMPATIBLE CON GMAIL Y MODO OSCURO -->

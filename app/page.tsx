@@ -27,6 +27,8 @@ import {
   HeartHandshake,
   Dumbbell,
   CheckCircle2,
+  Check,
+  Trophy,
   AlertCircle,
   HelpCircle,
 } from 'lucide-react';
@@ -108,8 +110,8 @@ export default function HomePage() {
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                  {activeStage?.name || 'Inscripciones Abiertas'}
+                <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider animate-pulse">
+                  ¡QUEDAN POCOS LUGARES!
                 </span>
               </div>
               <span className="text-xl sm:text-2xl font-black text-yellow-400 font-mono">
@@ -133,7 +135,7 @@ export default function HomePage() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
             <Link
-              href="/registro"
+              href="#etapas"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan flex items-center justify-center gap-3 shadow-xl"
             >
               <Ticket className="w-5 h-5 text-slate-950" />
@@ -211,47 +213,130 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* Single Pricing Highlight Card */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="bg-[#0b1120] border-2 border-cyan-400 glow-cyan rounded-3xl p-8 sm:p-10 relative text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 text-xs font-black uppercase rounded-full tracking-wider shadow-md mb-6">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Precio Oficial Único Vigente</span>
-            </div>
-
-            <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight mb-2">
-              Boleto Corredor 6K
-            </h3>
-            <p className="text-sm text-cyan-300 font-semibold max-w-md mx-auto mb-6">
-              Incluye: Playera, medalla y Kit Neon.
-            </p>
-
-            <div className="text-5xl sm:text-6xl font-black text-white font-mono my-4 flex items-center justify-center gap-2">
-              $350 <span className="text-base sm:text-lg text-cyan-400 font-bold uppercase">MXN</span>
-            </div>
-
-            {/* Quota Progress inside card */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 my-6 text-left">
-              <div className="flex justify-between items-center text-xs text-slate-300 mb-2 font-semibold">
-                <span>Inscritos: {config.currentTotalRegistered} de {config.maxTotalQuota} lugares</span>
-                <span className="text-cyan-400 font-bold font-mono">¡Solo quedan {spotsLeft} lugares!</span>
+        {/* Comparative Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
+          {/* Card 1: Carrera Competitiva ($350 MXN) */}
+          <div className="bg-[#0b1120] border-2 border-cyan-400 glow-cyan rounded-3xl p-6 sm:p-8 relative flex flex-col justify-between text-left shadow-2xl">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                  <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                  Competitiva 6K
+                </span>
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-yellow-400 h-3 rounded-full transition-all duration-1000"
-                  style={{ width: `${quotaPercent}%` }}
-                />
+
+              <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
+                Carrera Competitiva
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed mb-6">
+                Para corredores que buscan superar su marca con paquete completo e hidratación oficial.
+              </p>
+
+              <div className="flex items-baseline gap-2 mb-6 pb-6 border-b border-slate-800">
+                <span className="text-5xl font-black text-white font-mono tracking-tight">$350</span>
+                <span className="text-sm font-bold text-slate-400">MXN</span>
               </div>
+
+              <ul className="space-y-2.5 text-xs text-slate-300 mb-6">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span><strong className="text-white">Número de competidor</strong> oficial</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span><strong className="text-white">Medalla</strong> conmemorativa de finalista</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span><strong className="text-white">Playera</strong> oficial técnica Dry-Fit</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span><strong className="text-cyan-300">Hidratación</strong> en ruta y meta</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span><strong className="text-cyan-300">Kit Neón</strong> luminoso oficial</span>
+                </li>
+              </ul>
             </div>
 
             <Link
-              href="/registro"
-              className="w-full py-4 rounded-2xl font-black text-base text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan flex items-center justify-center gap-3 shadow-xl"
+              href="/registro?modalidad=Competitiva"
+              className="w-full py-3.5 rounded-xl font-black text-sm text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/50"
             >
-              <Ticket className="w-5 h-5 text-slate-950" />
-              <span>Inscribirme ahora por $350 MXN</span>
-              <ArrowRight className="w-5 h-5 text-slate-950" />
+              <Ticket className="w-4 h-4 text-slate-950" />
+              <span>INSCRIBIRME AHORA</span>
+              <ArrowRight className="w-4 h-4 text-slate-950" />
             </Link>
+          </div>
+
+          {/* Card 2: RECREATIVA 3K ($250 MXN) */}
+          <div className="bg-[#0b1120] border-2 border-fuchsia-500/50 hover:border-fuchsia-400 transition-all rounded-3xl p-6 sm:p-8 relative flex flex-col justify-between text-left shadow-xl">
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40">
+                  <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
+                  RECREATIVA 3K
+                </span>
+              </div>
+
+              <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-2">
+                Carrera Recreativa 3K
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed mb-6">
+                Para disfrutar en familia o con amigos trotando o caminando de manera libre.
+              </p>
+
+              <div className="flex items-baseline gap-2 mb-6 pb-6 border-b border-slate-800">
+                <span className="text-5xl font-black text-fuchsia-300 font-mono tracking-tight">$250</span>
+                <span className="text-sm font-bold text-slate-400">MXN</span>
+              </div>
+
+              <ul className="space-y-2.5 text-xs text-slate-300 mb-6">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-fuchsia-400 shrink-0" />
+                  <span><strong className="text-white">Medalla</strong> conmemorativa de finalista</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-fuchsia-400 shrink-0" />
+                  <span><strong className="text-white">Playera</strong> oficial técnica Dry-Fit</span>
+                </li>
+                <li className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl space-y-1 text-slate-400 text-[11px] mt-3">
+                  <div className="text-slate-300 font-bold">Solo incluye Medalla y Playera:</div>
+                  <div>• No incluye Kit Neón luminoso.</div>
+                  <div>• No incluye hidratación ni premiación.</div>
+                </li>
+              </ul>
+            </div>
+
+            <Link
+              href="/registro?modalidad=Recreativa"
+              className="w-full py-3.5 rounded-xl font-black text-sm text-white bg-fuchsia-600 hover:bg-fuchsia-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-fuchsia-950/50"
+            >
+              <Ticket className="w-4 h-4" />
+              <span>INSCRIBIRME AHORA</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Quota Progress Bar */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-5 text-center">
+            <p className="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-amber-400 to-fuchsia-400 uppercase tracking-wider animate-pulse mb-3">
+              ⚠️ LOS LUGARES SE ESTÁN ACABANDO, APARTA EL TUYO...
+            </p>
+            <div className="flex justify-between items-center text-xs text-slate-300 mb-2 font-semibold">
+              <span>Inscritos: {config.currentTotalRegistered} de {config.maxTotalQuota} lugares totales</span>
+              <span className="text-cyan-400 font-bold font-mono">¡Solo quedan {spotsLeft} lugares!</span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-yellow-400 h-3 rounded-full transition-all duration-1000"
+                style={{ width: `${quotaPercent}%` }}
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -431,7 +516,7 @@ export default function HomePage() {
           </p>
 
           <Link
-            href="/registro"
+            href="#etapas"
             className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan shadow-2xl"
           >
             <Ticket className="w-6 h-6 text-slate-950" />
@@ -440,12 +525,6 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
-
-      {/* Sticky mobile action bar */}
-      <StickyMobileBar
-        currentPrice={activeStage?.price || 450}
-        stageName={activeStage?.name || 'Inscripción General'}
-      />
 
       <Footer />
     </div>

@@ -555,7 +555,16 @@ export default function AdminParticipantesPage() {
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="text-slate-200">{p.category}</div>
+                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                        <span className="text-slate-200 font-semibold">{p.category}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${
+                          p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')
+                            ? 'bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/30'
+                            : 'bg-cyan-950 text-cyan-300 border border-cyan-500/30'
+                        }`}>
+                          {p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ') ? 'Recreativa' : 'Competitiva'}
+                        </span>
+                      </div>
                       <div className="text-[11px] text-slate-400">{p.age} años ({p.gender})</div>
                     </td>
                     <td className="py-3.5 px-4 font-black text-cyan-300 text-sm">

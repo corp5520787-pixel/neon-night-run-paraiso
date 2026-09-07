@@ -99,9 +99,18 @@ export default function ParticipanteTicketPage() {
         <div className="bg-[#0b1120] border-2 border-cyan-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden print:border-black print:bg-white print:text-black">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800 print:border-black">
             <div>
-              <span className="text-[11px] font-black text-cyan-400 uppercase tracking-wider block mb-1">
-                Boleto Oficial de Corredor · 6 Kilómetros
-              </span>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-black text-cyan-400 uppercase tracking-wider block">
+                  Boleto Oficial de Corredor · 6 Kilómetros
+                </span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                  participant.modality === 'Recreativa' || participant.category?.toLowerCase().includes('recreativ')
+                    ? 'bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/40'
+                    : 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                }`}>
+                  {participant.modality === 'Recreativa' || participant.category?.toLowerCase().includes('recreativ') ? '🌟 Recreativa' : '⚡ Competitiva'}
+                </span>
+              </div>
               <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase print:text-black">
                 {participant.fullName}
               </h1>
@@ -142,6 +151,22 @@ export default function ParticipanteTicketPage() {
                   isConfirmed ? 'bg-emerald-950 text-emerald-400' : 'bg-yellow-950 text-yellow-400'
                 }`}>
                   {isConfirmed ? '✓ Pagado y Confirmado' : 'Pendiente de Pago'}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-slate-400 block">Modalidad de Carrera:</span>
+                <strong className={`text-sm block font-bold mt-0.5 ${
+                  participant.modality === 'Recreativa' || participant.category?.toLowerCase().includes('recreativ') ? 'text-fuchsia-300' : 'text-cyan-300'
+                }`}>
+                  {participant.modality === 'Recreativa' || participant.category?.toLowerCase().includes('recreativ')
+                    ? '🌟 Carrera Recreativa 3K ($250)'
+                    : '⚡ Carrera Competitiva ($350)'}
+                </strong>
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  {participant.modality === 'Recreativa' || participant.category?.toLowerCase().includes('recreativ')
+                    ? 'Incluye: Solo Medalla y Playera'
+                    : 'Incluye: Número, Medalla, Playera, Hidratación y Kit Neón'}
                 </span>
               </div>
 
