@@ -44,7 +44,7 @@ export const defaultEventConfig: EventConfig = {
   location: 'Paraíso, Tabasco, México',
   venueName: 'Malecón Turístico y Puerto de Paraíso',
   registrationOpen: true,
-  maxTotalQuota: 249,
+  maxTotalQuota: 350,
   currentTotalRegistered: 100,
   scheduleTime: '19:30 hrs (Calentamiento 18:45 hrs)',
   kitPickupDates: 'Lugar y horario por definir',
@@ -192,7 +192,7 @@ export const defaultPricingStages: PricingStage[] = [
     price: 350,
     startDate: '2026-06-01T00:00:00',
     endDate: '2026-11-06T23:59:59',
-    quota: 249,
+    quota: 350,
     soldCount: 100,
     active: true,
     badgeText: 'Tarifa Única Vigente',
@@ -794,6 +794,11 @@ export async function getEventConfig(): Promise<EventConfig> {
       await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
       recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
     }
+    if (data.maxTotalQuota !== 350) {
+      data.maxTotalQuota = 350;
+      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
+      recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
+    }
     cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
     return data;
   }
@@ -910,7 +915,14 @@ export async function getPricingStages(): Promise<PricingStage[]> {
   await ensureSeeded();
   const snap = await getDocs(collection(db, 'stages'));
   recordDbOp('READ', 'stages', snap.size || 1);
-  const data = snap.docs.map(doc => doc.data() as PricingStage);
+  const data = snap.docs.map(docSnap => {
+    const stage = docSnap.data() as PricingStage;
+    if (stage.id === 'stage-regular' && stage.quota !== 350) {
+      stage.quota = 350;
+      setDoc(doc(db, 'stages', stage.id), stage).catch(() => {});
+    }
+    return stage;
+  });
   cachedPricingStages = { data, expiry: now + CACHE_TTL_MS };
   return data;
 }
