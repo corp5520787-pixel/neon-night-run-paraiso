@@ -152,6 +152,10 @@ export interface Participant extends ParticipantInput {
   modality?: RaceModality;
   lastEmailSentAt?: string;
   emailSentCount?: number;
+  paymentReminderCount?: number;
+  lastPaymentReminderAt?: string;
+  cancelledAt?: string;
+  cancellationReason?: string;
 }
 
 export interface Order {

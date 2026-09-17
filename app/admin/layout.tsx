@@ -21,6 +21,7 @@ import {
   Award,
   Loader2,
   Database,
+  UserX,
 } from 'lucide-react';
 import { getStoredAdminUser, setStoredAdminUser } from '@/lib/admin-auth';
 import { AdminUser } from '@/lib/types';
@@ -68,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'staff', 'finance'] },
     { href: '/admin/participantes', label: 'Participantes', icon: Users, roles: ['admin', 'staff'] },
+    { href: '/admin/no-pagados', label: 'No Pagados', icon: UserX, roles: ['admin', 'staff', 'finance'] },
     { href: '/admin/pagos', label: 'Pagos & Órdenes', icon: CreditCard, roles: ['admin', 'finance'] },
     { href: '/admin/entrega-kits', label: 'Entrega de Kits (QR)', icon: QrCode, roles: ['admin', 'staff', 'kits_staff'] },
     { href: '/admin/patrocinadores', label: 'Patrocinadores', icon: Award, roles: ['admin'] },

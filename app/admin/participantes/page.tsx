@@ -28,6 +28,7 @@ import {
   Mail,
   Trophy,
   Package,
+  UserX,
 } from 'lucide-react';
 import { Participant, ShirtSize } from '@/lib/types';
 
@@ -239,6 +240,33 @@ export default function AdminParticipantesPage() {
     }
   };
 
+  const handleCancelAndReleaseSpot = async (p: Participant) => {
+    setSubmittingModal(true);
+    try {
+      const res = await fetch(`/api/participants/${p.folio}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: 'Lugar liberado por falta de pago (más de 5 días). Conservado para futuras carreras.',
+          notifyUser: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setParticipantToDelete(null);
+        setSuccessNotification(`Lugar liberado para ${p.fullName}. Se guardó en "No Pagados" para futuras carreras.`);
+        setTimeout(() => setSuccessNotification(null), 5000);
+        fetchParticipants();
+      } else {
+        alert(data.error || 'Error al liberar lugar');
+      }
+    } catch (err) {
+      console.error('Error cancelling and releasing spot:', err);
+    } finally {
+      setSubmittingModal(false);
+    }
+  };
+
   const handleResendEmail = async (p: Participant) => {
     setResendingEmailFolio(p.folio);
     try {
@@ -414,6 +442,13 @@ export default function AdminParticipantesPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/admin/no-pagados"
+            className="px-3.5 py-2.5 bg-rose-950/50 hover:bg-rose-900/60 border border-rose-500/40 text-rose-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors shadow-sm"
+          >
+            <UserX className="w-4 h-4 text-rose-400" />
+            <span>Ver No Pagados</span>
+          </Link>
           <button
             onClick={fetchParticipants}
             className="p-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-colors"
@@ -588,6 +623,7 @@ export default function AdminParticipantesPage() {
             <option value="all">Todos los Estados</option>
             <option value="confirmed">Confirmados</option>
             <option value="pending">Pendientes de Pago</option>
+            <option value="cancelled">No Pagados / Cancelados</option>
           </select>
 
           {/* Size */}
@@ -641,6 +677,7 @@ export default function AdminParticipantesPage() {
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/60 text-slate-400 font-bold uppercase tracking-wider">
                 <th className="py-3.5 px-4">Folio</th>
+                <th className="py-3.5 px-4">Fecha Registro</th>
                 <th className="py-3.5 px-4">Corredor</th>
                 <th className="py-3.5 px-4">Categoría / Edad</th>
                 <th className="py-3.5 px-4">Talla</th>
@@ -653,7 +690,7 @@ export default function AdminParticipantesPage() {
             <tbody className="divide-y divide-slate-800/80">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center">
+                  <td colSpan={9} className="py-12 text-center">
                     <div className="flex items-center justify-center gap-2 text-cyan-400 font-semibold text-xs">
                       <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
                       <span>Cargando corredores inscritos...</span>
@@ -662,7 +699,7 @@ export default function AdminParticipantesPage() {
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={8} className="py-12 px-6 text-center">
+                  <td colSpan={9} className="py-12 px-6 text-center">
                     <div className="max-w-md mx-auto space-y-4">
                       <div className="text-rose-400 font-bold flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
                         <AlertTriangle className="w-5 h-5 text-rose-500 animate-pulse" />
@@ -683,7 +720,7 @@ export default function AdminParticipantesPage() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-500">
+                  <td colSpan={9} className="py-8 text-center text-slate-500">
                     No se encontraron participantes con los filtros seleccionados.
                   </td>
                 </tr>
@@ -692,6 +729,14 @@ export default function AdminParticipantesPage() {
                   <tr key={p.id} className="hover:bg-slate-900/40 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-yellow-300">
                       {p.folio}
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <div className="text-slate-200 font-medium">
+                        {p.createdAt ? new Date(p.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {p.createdAt ? new Date(p.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-white text-sm">{p.fullName}</div>
@@ -746,9 +791,11 @@ export default function AdminParticipantesPage() {
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                         p.status === 'confirmed'
                           ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
+                          : p.status === 'cancelled'
+                          ? 'bg-rose-950 text-rose-400 border border-rose-500/30'
                           : 'bg-yellow-950 text-yellow-400 border border-yellow-500/30'
                       }`}>
-                        {p.status === 'confirmed' ? 'Confirmado' : 'Pendiente'}
+                        {p.status === 'confirmed' ? 'Confirmado' : p.status === 'cancelled' ? 'No Pagó (Liberado)' : 'Pendiente'}
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
@@ -1336,43 +1383,66 @@ export default function AdminParticipantesPage() {
          </div>
        )}
 
-      {/* Custom Delete Confirmation Modal */}
+      {/* Custom Delete / Release Confirmation Modal */}
       {participantToDelete && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-rose-500/30 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-rose-950/30">
-            <div className="flex items-center gap-3 text-rose-400 mb-4">
-              <div className="p-2 bg-rose-950/50 rounded-xl border border-rose-500/20">
-                <AlertTriangle className="w-6 h-6" />
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-400 mb-4">
+              <div className="p-2 bg-amber-950/50 rounded-xl border border-amber-500/20 text-amber-400">
+                <UserX className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-black text-white">¿Seguro que quieres eliminar?</h3>
+              <div>
+                <h3 className="text-lg font-black text-white">Gestionar participante</h3>
+                <p className="text-xs text-slate-400">¿Qué acción deseas realizar con este registro?</p>
+              </div>
             </div>
             
-            <p className="text-slate-300 text-sm mb-6 leading-relaxed">
-              Estás a punto de eliminar por completo al participante <strong className="text-white">{participantToDelete.fullName}</strong> con folio <strong className="text-yellow-400 font-mono">{participantToDelete.folio}</strong>.
+            <p className="text-slate-300 text-sm mb-4 leading-relaxed">
+              Participante: <strong className="text-white">{participantToDelete.fullName}</strong> (<strong className="text-yellow-400 font-mono">{participantToDelete.folio}</strong>)
               <br />
-              <span className="text-rose-400 text-xs mt-2 block">Esta acción es irreversible y no se puede deshacer.</span>
+              <span className="text-xs text-slate-400 block mt-1">
+                Registrado el {participantToDelete.createdAt ? new Date(participantToDelete.createdAt).toLocaleDateString() : 'Fecha no disponible'} · Estatus actual: <strong className="text-cyan-300 capitalize">{participantToDelete.status}</strong>
+              </span>
             </p>
 
-            <div className="flex gap-3 justify-end">
-              <button
-                type="button"
-                onClick={() => setParticipantToDelete(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold transition-colors text-sm"
-              >
-                Cancelar
-              </button>
+            <div className="space-y-3 mb-6">
+              <div className="p-3.5 bg-rose-950/30 border border-rose-500/30 rounded-xl">
+                <div className="text-xs font-bold text-rose-300 flex items-center justify-between mb-1">
+                  <span>Recomendado si no pagó (más de 5 días)</span>
+                  <span className="text-[10px] uppercase bg-rose-900/60 px-2 py-0.5 rounded text-rose-200">Conserva datos</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-normal">
+                  <strong>Liberar lugar y mover a &quot;No Pagados&quot;</strong>: Su lugar de los 350 se libera para otro corredor y se le envía el correo de notificación. Sus datos se guardan en la base de datos para invitarlo a futuras carreras.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleCancelAndReleaseSpot(participantToDelete)}
+                  disabled={submittingModal}
+                  className="mt-2.5 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors shadow"
+                >
+                  <UserX className="w-4 h-4" />
+                  <span>Liberar Lugar y Guardar en No Pagados</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={confirmDeleteParticipant}
                 disabled={submittingModal}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-black rounded-xl flex items-center gap-1.5 transition-colors shadow-lg shadow-rose-950/40 text-sm"
+                className="text-xs text-rose-400 hover:text-rose-300 underline font-medium"
+                title="Eliminar de la base de datos definitivamente"
               >
-                {submittingModal ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Trash2 className="w-4 h-4" />
-                )}
-                <span>Eliminar</span>
+                Eliminar definitivamente de la base de datos
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setParticipantToDelete(null)}
+                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold transition-colors text-xs"
+              >
+                Cancelar
               </button>
             </div>
           </div>

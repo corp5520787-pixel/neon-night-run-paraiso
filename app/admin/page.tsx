@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Database,
   Activity,
+  UserX,
 } from 'lucide-react';
 import { DashboardStats, Order, Participant } from '@/lib/types';
 
@@ -26,12 +27,17 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [overdueCount, setOverdueCount] = useState(0);
 
   const fetchStats = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/admin/dashboard');
+      const [res, resAudit] = await Promise.all([
+        fetch('/api/admin/dashboard'),
+        fetch('/api/admin/audit-overdue').catch(() => null),
+      ]);
+
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) {
@@ -42,6 +48,13 @@ export default function AdminDashboardPage() {
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data.error || 'Error del servidor al obtener las métricas.');
+      }
+
+      if (resAudit && resAudit.ok) {
+        const auditData = await resAudit.json();
+        if (auditData.success && auditData.summary) {
+          setOverdueCount(auditData.summary.overduePendingCount || 0);
+        }
       }
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
@@ -228,6 +241,39 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* OVERDUE PENDING BANNER ALERT */}
+      {overdueCount > 0 && (
+        <div className="bg-gradient-to-r from-rose-950/80 via-[#180f1b] to-[#0b1120] border border-rose-500/40 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl shadow-rose-950/20">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 flex-shrink-0 animate-pulse">
+              <UserX className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-extrabold text-white uppercase tracking-tight">
+                  {overdueCount} {overdueCount === 1 ? 'Persona tiene' : 'Personas tienen'} más de 5 días sin pagar
+                </h4>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                  Liberación de cupo pendiente
+                </span>
+              </div>
+              <p className="text-xs text-rose-200/80 mt-0.5">
+                Puedes revisar sus datos y agregarlos al apartado de &ldquo;No Pagados&rdquo; para liberar sus lugares del cupo de 350. Sus datos se mantendrán guardados para invitarlos a futuras carreras.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/admin/no-pagados"
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-colors whitespace-nowrap shadow-md shadow-rose-950/40"
+          >
+            <UserX className="w-3.5 h-3.5" />
+            <span>Revisar y Agregar a No Pagados</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* QUICK DB USAGE & QUOTA WIDGET */}
       <div className="bg-gradient-to-r from-[#090e1a] via-[#0b1120] to-[#090e1a] border border-cyan-500/20 rounded-3xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">

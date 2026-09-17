@@ -183,6 +183,7 @@ export default function AdminPagosPage() {
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/60 text-slate-400 font-bold uppercase tracking-wider">
                 <th className="py-3.5 px-4">Orden</th>
+                <th className="py-3.5 px-4">Fecha Registro</th>
                 <th className="py-3.5 px-4">Comprador</th>
                 <th className="py-3.5 px-4">Corredores</th>
                 <th className="py-3.5 px-4">Método</th>
@@ -194,7 +195,7 @@ export default function AdminPagosPage() {
             <tbody className="divide-y divide-slate-800/80">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-500">
+                  <td colSpan={8} className="py-8 text-center text-slate-500">
                     No se encontraron órdenes con los filtros seleccionados.
                   </td>
                 </tr>
@@ -203,6 +204,14 @@ export default function AdminPagosPage() {
                   <tr key={o.id} className="hover:bg-slate-900/40 transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-cyan-300">
                       {o.orderNumber}
+                    </td>
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <div className="text-slate-200 font-medium">
+                        {o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                      </div>
+                      <div className="text-[10px] text-slate-400">
+                        {o.createdAt ? new Date(o.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-white text-sm">{o.customerName}</div>

@@ -246,3 +246,198 @@ export async function sendPendingRegistrationEmail(params: SendConfirmationEmail
   console.log(`[PENDING EMAIL SIMULATOR] Correo enviado a ${participant.email} | Folio: ${participant.folio} | Orden: ${order.orderNumber}`);
   return { success: true, simulated: true };
 }
+
+export interface SendReminderEmailParams {
+  order: Order;
+  participant: Participant;
+  reminderNumber: number; // e.g. 1, 2, 3
+  daysPending: number;
+}
+
+/**
+ * Sends a periodic payment reminder email (every 24h after 5 days pending)
+ */
+export async function sendPaymentReminderEmail(params: SendReminderEmailParams): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+  const { order, participant, reminderNumber, daysPending } = params;
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM || 'Neon Night Run Paraíso <contacto@neonnightrunparaiso.mx>';
+  const isRealKey = resendApiKey && !resendApiKey.includes('00000000') && resendApiKey.startsWith('re_');
+
+  const waLink = `https://wa.me/529331134406?text=${encodeURIComponent(
+    `Hola, adjunto mi comprobante de pago para mi registro pendiente (Folio: ${participant.folio}, Orden: ${order.orderNumber}, ${participant.fullName}).`
+  )}`;
+
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8">
+      <title>Recordatorio de Pago - Neon Night Run Paraíso 2026</title>
+    </head>
+    <body style="background-color: #060913; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 20px; text-align: center; margin: 0;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #0b1120; border: 2px solid #facc15; border-radius: 16px; padding: 30px; box-shadow: 0 0 25px rgba(250, 204, 21, 0.2);">
+        <div style="background-color: #facc15; color: #060913; font-weight: 900; font-size: 11px; padding: 6px 14px; border-radius: 20px; display: inline-block; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+          ⏳ RECORDATORIO DE PAGO #${reminderNumber}
+        </div>
+        <h1 style="color: #facc15; margin: 0 0 6px 0; font-weight: 900; letter-spacing: 1px; font-size: 22px;">¡TU LUGAR TE ESTÁ ESPERANDO!</h1>
+        <h2 style="color: #ff007f; margin-top: 0; font-weight: 800; font-size: 16px;">NEON NIGHT RUN PARAÍSO 2026</h2>
+        
+        <p style="font-size: 15px; color: #cbd5e1; line-height: 1.6; text-align: left;">
+          Hola <strong>${participant.fullName}</strong>, notamos que han pasado <strong>${daysPending} días</strong> desde que apartaste tu lugar y tu registro aún se encuentra en espera de pago.
+        </p>
+
+        <div style="background-color: #1e1b4b; padding: 18px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #facc15; text-align: left; font-size: 13px; line-height: 1.6;">
+          <p style="margin: 0; color: #facc15; font-weight: bold;">⚡ EL CUPO ES LIMITADO A 350 CORREDORES</p>
+          <p style="margin: 6px 0 0 0; color: #cbd5e1;">
+            Para no perder tu folio y asegurar tu playera conmemorativa, es necesario completar tu pago antes de que el sistema libere tu lugar para otro participante en lista de espera.
+          </p>
+        </div>
+
+        <div style="background-color: #060913; padding: 20px; border-radius: 12px; border: 1px solid #334155; text-align: left; margin-bottom: 24px; font-size: 13px; line-height: 1.6;">
+          <h4 style="margin: 0 0 10px 0; color: #00f3ff; text-transform: uppercase; font-size: 13px;">📋 Resumen de tu Registro:</h4>
+          <p style="margin: 3px 0;"><strong>Folio de Corredor:</strong> <span style="color: #facc15; font-family: monospace; font-weight: bold; font-size: 15px;">${participant.folio}</span></p>
+          <p style="margin: 3px 0;"><strong>Modalidad:</strong> <span style="color: #ffffff;">${participant.modality || participant.category}</span></p>
+          <p style="margin: 3px 0;"><strong>Talla de Playera:</strong> <span style="color: #ffffff;">${participant.shirtSize}</span></p>
+          <p style="margin: 3px 0;"><strong>Monto a Transferir:</strong> <span style="color: #10b981; font-size: 16px; font-weight: bold;">$${order.totalAmount || participant.unitPrice} MXN</span></p>
+          <hr style="border: 0; border-top: 1px solid #1e293b; margin: 12px 0;" />
+          <p style="margin: 3px 0;"><strong>CLABE Interbancaria SPEI:</strong> <strong style="color: #00f3ff; font-family: monospace; font-size: 14px;">646180402345488997</strong></p>
+          <p style="margin: 3px 0;"><strong>Banco:</strong> Transferencia SPEI / STP</p>
+          <p style="margin: 3px 0;"><strong>Beneficiario:</strong> Night Run Paraíso</p>
+          <p style="margin: 3px 0;"><strong>Concepto:</strong> <strong style="color: #facc15;">${order.customerName}</strong></p>
+        </div>
+
+        <div style="margin: 25px 0;">
+          <a href="${waLink}" target="_blank" style="background-color: #10b981; color: #ffffff; font-weight: 900; font-size: 14px; padding: 14px 28px; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); text-transform: uppercase; letter-spacing: 0.5px;">
+            📲 Notificar Pago por WhatsApp
+          </a>
+        </div>
+
+        <p style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 25px;">
+          Si ya realizaste tu pago en las últimas horas, por favor envía tu comprobante por WhatsApp para que nuestro equipo lo valide y active tu boleto digital inmediatamente.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  if (isRealKey) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${resendApiKey}`,
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: participant.email,
+          subject: `⏳ Recordatorio: Asegura tu lugar en la Neon Night Run Paraíso 2026 (Folio ${participant.folio})`,
+          html: emailHtml,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return { success: true, messageId: data.id, simulated: false };
+      }
+    } catch (err) {
+      console.error('Error sending reminder email via Resend:', err);
+    }
+  }
+
+  console.log(`[REMINDER EMAIL SIMULATOR] Recordatorio #${reminderNumber} enviado a ${participant.email} | Folio: ${participant.folio}`);
+  return { success: true, simulated: true };
+}
+
+export interface SendCancellationEmailParams {
+  order: Order;
+  participant: Participant;
+}
+
+/**
+ * Sends the final notification that their pending spot was released due to non-payment.
+ */
+export async function sendCancellationEmail(params: SendCancellationEmailParams): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
+  const { order, participant } = params;
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM || 'Neon Night Run Paraíso <contacto@neonnightrunparaiso.mx>';
+  const isRealKey = resendApiKey && !resendApiKey.includes('00000000') && resendApiKey.startsWith('re_');
+
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8">
+      <title>Liberación de Lugar - Neon Night Run Paraíso 2026</title>
+    </head>
+    <body style="background-color: #060913; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 20px; text-align: center; margin: 0;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #0b1120; border: 2px solid #ef4444; border-radius: 16px; padding: 30px; box-shadow: 0 0 25px rgba(239, 68, 68, 0.2);">
+        <div style="background-color: #ef4444; color: #ffffff; font-weight: 900; font-size: 11px; padding: 6px 14px; border-radius: 20px; display: inline-block; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+          AVISO IMPORTANTE
+        </div>
+        <h1 style="color: #ef4444; margin: 0 0 6px 0; font-weight: 900; letter-spacing: 1px; font-size: 22px;">LIBERACIÓN DE LUGAR POR FALTA DE PAGO</h1>
+        <h2 style="color: #ff007f; margin-top: 0; font-weight: 800; font-size: 16px;">NEON NIGHT RUN PARAÍSO 2026</h2>
+        
+        <p style="font-size: 15px; color: #cbd5e1; line-height: 1.6; text-align: left;">
+          Estimado(a) <strong>${participant.fullName}</strong>:
+        </p>
+
+        <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; text-align: left;">
+          Te informamos que, debido a que el plazo límite de pago y los recordatorios han concluido sin recibir tu comprobante, <strong>lamentablemente tu lugar no se ha podido guardar</strong> y el cupo ha sido liberado para que otro corredor en lista de espera pueda participar.
+        </p>
+
+        <div style="background-color: #1e1b4b; padding: 18px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #ef4444; text-align: left; font-size: 13px; line-height: 1.6;">
+          <p style="margin: 0; color: #f87171; font-weight: bold;">DETALLES DEL REGISTRO CANCELADO:</p>
+          <p style="margin: 4px 0 0 0; color: #cbd5e1;">
+            • Folio liberado: <strong style="font-family: monospace; color: #ffffff;">${participant.folio}</strong><br/>
+            • Categoría: ${participant.category}<br/>
+            • Orden asociada: ${order.orderNumber}
+          </p>
+        </div>
+
+        <p style="font-size: 14px; color: #cbd5e1; line-height: 1.6; text-align: left;">
+          Tus datos se conservan en nuestra comunidad para informarte de próximas aperturas de cupos, promociones especiales y futuras carreras atléticas en Paraíso.
+        </p>
+
+        <div style="margin: 25px 0;">
+          <a href="https://wa.me/529331134406?text=${encodeURIComponent(`Hola, tenía el folio cancelado ${participant.folio} a nombre de ${participant.fullName} y me gustaría consultar si aún puedo recuperar un lugar.`)}" target="_blank" style="background-color: #334155; color: #ffffff; font-weight: 700; font-size: 13px; padding: 12px 24px; border-radius: 10px; text-decoration: none; display: inline-block;">
+            ¿Deseas consultar disponibilidad? Contáctanos por WhatsApp
+          </a>
+        </div>
+
+        <p style="font-size: 11px; color: #64748b; line-height: 1.5; margin-top: 25px;">
+          Agradecemos tu interés en la Neon Night Run Paraíso 2026 y esperamos contar contigo en nuestros próximos eventos deportivos.
+        </p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  if (isRealKey) {
+    try {
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${resendApiKey}`,
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: participant.email,
+          subject: `Aviso: Liberación de lugar para Neon Night Run Paraíso 2026 (Folio ${participant.folio})`,
+          html: emailHtml,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return { success: true, messageId: data.id, simulated: false };
+      }
+    } catch (err) {
+      console.error('Error sending cancellation email via Resend:', err);
+    }
+  }
+
+  console.log(`[CANCELLATION EMAIL SIMULATOR] Correo final de liberación de lugar enviado a ${participant.email} | Folio: ${participant.folio}`);
+  return { success: true, simulated: true };
+}

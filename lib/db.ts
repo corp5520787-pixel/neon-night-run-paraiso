@@ -666,7 +666,7 @@ export function invalidateAmbassadorsCache() {
   cachedAmbassadors = null;
 }
 
-async function ensureSeeded() {
+export async function ensureSeeded() {
   if (hasEnsuredSeeded || isSeeding) return;
   isSeeding = true;
   try {
@@ -1964,6 +1964,71 @@ export async function getDatabaseUsageStats(): Promise<DatabaseUsageStats> {
       serverSideOnly: true,
     },
     recentOperations: dbTelemetry.recentOps.slice(0, 15),
+  };
+}
+
+/**
+ * Checks all participants in the database for those with status 'pending'
+ * whose registration was made more than 5 days ago.
+ * Moves them to 'cancelled' status (No Pagados), records cancellation reason,
+ * and updates their order status to rejected.
+ */
+export async function auditAndMoveOverduePendingToCancelled(): Promise<{
+  movedCount: number;
+  participants: Array<{ folio: string; fullName: string; daysPending: number }>;
+}> {
+  await ensureSeeded();
+  const now = new Date();
+  const nowMs = now.getTime();
+  const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+
+  const [participantsSnap, ordersSnap] = await Promise.all([
+    getDocs(collection(db, 'participants')),
+    getDocs(collection(db, 'orders')),
+  ]);
+
+  const ordersMap = new Map<string, Order>();
+  ordersSnap.docs.forEach(d => {
+    ordersMap.set(d.id, d.data() as Order);
+  });
+
+  const moved: Array<{ folio: string; fullName: string; daysPending: number }> = [];
+
+  for (const docSnap of participantsSnap.docs) {
+    const p = docSnap.data() as Participant;
+    if (p.status === 'pending') {
+      const createdMs = p.createdAt ? new Date(p.createdAt).getTime() : nowMs;
+      const diffMs = nowMs - createdMs;
+      const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+      if (diffMs >= FIVE_DAYS_MS) {
+        p.status = 'cancelled';
+        p.cancelledAt = now.toISOString();
+        p.cancellationReason = `Lugar liberado por falta de pago (más de ${days} días transcurridos sin comprobante). Registrado en No Pagados para futuras carreras.`;
+
+        await setDoc(doc(db, 'participants', p.id), p, { merge: true });
+
+        const order = ordersMap.get(p.orderId);
+        if (order) {
+          await setDoc(
+            doc(db, 'orders', order.id),
+            { paymentStatus: 'rejected', updatedAt: now.toISOString() },
+            { merge: true }
+          );
+        }
+
+        moved.push({
+          folio: p.folio,
+          fullName: p.fullName,
+          daysPending: days,
+        });
+      }
+    }
+  }
+
+  return {
+    movedCount: moved.length,
+    participants: moved,
   };
 }
 

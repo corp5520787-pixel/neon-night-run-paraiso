@@ -1,0 +1,56 @@
+{
+  "entities": {
+    "Participant": {
+      "title": "Participant",
+      "description": "Corredor inscrito a Neon Night Run Paraíso 2026",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderId": { "type": "string" },
+        "folio": { "type": "string" },
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "modality": { "type": "string" },
+        "category": { "type": "string" },
+        "shirtSize": { "type": "string" },
+        "status": { "type": "string", "enum": ["confirmed", "pending", "cancelled"] },
+        "kitDelivered": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "cancelledAt": { "type": "string" },
+        "cancellationReason": { "type": "string" },
+        "paymentReminderCount": { "type": "number" },
+        "lastReminderSentAt": { "type": "string" }
+      },
+      "required": ["id", "folio", "fullName", "email", "phone", "status"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Orden de compra de inscripciones para la carrera",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "participantsCount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paymentMethod": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["approved", "pending", "rejected", "refunded"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "orderNumber", "customerName", "customerEmail", "paymentStatus"]
+    }
+  },
+  "firestore": {
+    "/participants/{participantId}": {
+      "schema": { "$ref": "#/entities/Participant" },
+      "description": "Colección de participantes registrados"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Colección de órdenes de inscripción"
+    }
+  }
+}
