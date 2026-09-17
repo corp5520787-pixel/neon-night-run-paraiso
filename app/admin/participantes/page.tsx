@@ -26,6 +26,8 @@ import {
   QrCode,
   Banknote,
   Mail,
+  Trophy,
+  Package,
 } from 'lucide-react';
 import { Participant, ShirtSize } from '@/lib/types';
 
@@ -37,6 +39,7 @@ export default function AdminParticipantesPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sizeFilter, setSizeFilter] = useState('all');
   const [kitFilter, setKitFilter] = useState('all');
+  const [modalityFilter, setModalityFilter] = useState('all');
 
   // Modal states
   const [editingParticipant, setEditingParticipant] = useState<Participant | null>(null);
@@ -113,7 +116,13 @@ export default function AdminParticipantesPage() {
       (kitFilter === 'delivered' && p.kitDelivered) ||
       (kitFilter === 'pending' && !p.kitDelivered);
 
-    return matchesSearch && matchesStatus && matchesSize && matchesKit;
+    const isRec = p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ');
+    const matchesModality =
+      modalityFilter === 'all' ||
+      (modalityFilter === 'recreativa' && isRec) ||
+      (modalityFilter === 'competitiva' && !isRec);
+
+    return matchesSearch && matchesStatus && matchesSize && matchesKit && matchesModality;
   });
 
   // Export CSV
@@ -122,9 +131,11 @@ export default function AdminParticipantesPage() {
     const headers = [
       'Folio',
       'Nombre Completo',
+      'Modalidad',
+      'Categoría',
+      'Incluye Kit Completo',
       'Edad',
       'Género',
-      'Categoría',
       'Talla Playera',
       'Email',
       'Teléfono',
@@ -136,22 +147,29 @@ export default function AdminParticipantesPage() {
       'Fecha Registro',
     ];
 
-    const rows = participants.map(p => [
-      p.folio,
-      `"${p.fullName}"`,
-      p.age,
-      p.gender,
-      `"${p.category}"`,
-      p.shirtSize,
-      p.email,
-      p.phone,
-      `"${p.emergencyContact}"`,
-      p.emergencyPhone,
-      `"${p.clubOrTeam || ''}"`,
-      p.status,
-      p.kitDelivered ? 'SI' : 'NO',
-      new Date(p.createdAt).toLocaleDateString(),
-    ]);
+    const rows = participants.map(p => {
+      const isRec = p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ');
+      const modalityLabel = isRec ? 'Recreativa (3K)' : 'Competitiva (6K)';
+      const includesKitLabel = isRec ? 'NO (Solo Medalla y Playera)' : 'SI (Kit Completo Neón + Chip)';
+      return [
+        p.folio,
+        `"${p.fullName}"`,
+        `"${modalityLabel}"`,
+        `"${p.category}"`,
+        `"${includesKitLabel}"`,
+        p.age,
+        p.gender,
+        p.shirtSize,
+        p.email,
+        p.phone,
+        `"${p.emergencyContact}"`,
+        p.emergencyPhone,
+        `"${p.clubOrTeam || ''}"`,
+        p.status,
+        p.kitDelivered ? 'SI' : 'NO',
+        new Date(p.createdAt).toLocaleDateString(),
+      ];
+    });
 
     const csvContent =
       'data:text/csv;charset=utf-8,' +
@@ -180,6 +198,7 @@ export default function AdminParticipantesPage() {
           phone: editingParticipant.phone,
           shirtSize: editingParticipant.shirtSize,
           category: editingParticipant.category,
+          modality: editingParticipant.modality,
           emergencyContact: editingParticipant.emergencyContact,
           emergencyPhone: editingParticipant.emergencyPhone,
           clubOrTeam: editingParticipant.clubOrTeam,
@@ -307,6 +326,7 @@ export default function AdminParticipantesPage() {
             age,
             gender: manualGender,
             category: manualCategory,
+            modality: manualCategory === 'Recreativa' ? 'Recreativa' : 'Competitiva',
             email: manualEmail.trim(),
             phone: manualPhone.trim(),
             city: manualCity.trim() || 'Paraíso',
@@ -424,10 +444,112 @@ export default function AdminParticipantesPage() {
         </div>
       )}
 
+      {/* MODALITY & KIT SUMMARY METRIC CARDS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Total Card */}
+        <div
+          onClick={() => { setModalityFilter('all'); setKitFilter('all'); }}
+          className={`cursor-pointer p-3.5 rounded-2xl border transition-all ${
+            modalityFilter === 'all' && kitFilter === 'all'
+              ? 'bg-slate-900/90 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30'
+              : 'bg-[#0b1120] border-slate-800 hover:border-slate-700'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Inscritos</span>
+            <Users className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div className="text-2xl font-black text-white mt-1">
+            {participants.length} <span className="text-xs font-normal text-slate-500">/ 350 cupo</span>
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
+            {participants.filter(p => p.status === 'confirmed').length} confirmados • {participants.filter(p => p.status === 'pending').length} pendientes
+          </div>
+        </div>
+
+        {/* Competitiva Card */}
+        <div
+          onClick={() => setModalityFilter(modalityFilter === 'competitiva' ? 'all' : 'competitiva')}
+          className={`cursor-pointer p-3.5 rounded-2xl border transition-all ${
+            modalityFilter === 'competitiva'
+              ? 'bg-cyan-950/40 border-cyan-400 shadow-md ring-1 ring-cyan-400/40'
+              : 'bg-[#0b1120] border-slate-800 hover:border-cyan-500/40'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5 text-cyan-400" />
+              Competitiva (6K)
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+              Kit Completo
+            </span>
+          </div>
+          <div className="text-2xl font-black text-cyan-300 mt-1">
+            {participants.filter(p => p.modality !== 'Recreativa' && !p.category?.toLowerCase().includes('recreativ')).length}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
+            Incluye kit completo, chip cronometraje, medalla y playera
+          </div>
+        </div>
+
+        {/* Recreativa Card */}
+        <div
+          onClick={() => setModalityFilter(modalityFilter === 'recreativa' ? 'all' : 'recreativa')}
+          className={`cursor-pointer p-3.5 rounded-2xl border transition-all ${
+            modalityFilter === 'recreativa'
+              ? 'bg-fuchsia-950/40 border-fuchsia-400 shadow-md ring-1 ring-fuchsia-400/40'
+              : 'bg-[#0b1120] border-slate-800 hover:border-fuchsia-500/40'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" />
+              Recreativa (3K)
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/30">
+              Solo Medalla + Playera
+            </span>
+          </div>
+          <div className="text-2xl font-black text-fuchsia-300 mt-1">
+            {participants.filter(p => p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')).length}
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
+            ⚠️ <strong className="text-fuchsia-300">NO incluye kit</strong> (solo playera y medalla)
+          </div>
+        </div>
+
+        {/* Kit Delivery Status Card */}
+        <div
+          onClick={() => setKitFilter(kitFilter === 'delivered' ? 'all' : 'delivered')}
+          className={`cursor-pointer p-3.5 rounded-2xl border transition-all ${
+            kitFilter === 'delivered'
+              ? 'bg-emerald-950/40 border-emerald-400 shadow-md ring-1 ring-emerald-400/40'
+              : 'bg-[#0b1120] border-slate-800 hover:border-emerald-500/40'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+              <Package className="w-3.5 h-3.5 text-emerald-400" />
+              Kits Entregados
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+              Entrega
+            </span>
+          </div>
+          <div className="text-2xl font-black text-emerald-300 mt-1">
+            {participants.filter(p => p.kitDelivered).length} <span className="text-xs font-normal text-slate-500">entregados</span>
+          </div>
+          <div className="text-[10px] text-slate-400 mt-0.5">
+            {participants.filter(p => !p.kitDelivered).length} pendientes por recoger
+          </div>
+        </div>
+      </div>
+
       {/* SEARCH & FILTERS BAR */}
       <div className="bg-[#0b1120] border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
         {/* Search */}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full md:w-72">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -440,6 +562,23 @@ export default function AdminParticipantesPage() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* Modality Filter */}
+          <select
+            value={modalityFilter}
+            onChange={e => setModalityFilter(e.target.value)}
+            className={`px-3 py-2 border rounded-xl text-xs font-semibold focus:outline-none transition-colors ${
+              modalityFilter === 'recreativa'
+                ? 'bg-fuchsia-950 border-fuchsia-500 text-fuchsia-300'
+                : modalityFilter === 'competitiva'
+                ? 'bg-cyan-950 border-cyan-500 text-cyan-300'
+                : 'bg-slate-900 border-slate-700 text-slate-200 focus:border-cyan-400'
+            }`}
+          >
+            <option value="all">Todas las Modalidades</option>
+            <option value="competitiva">Competitiva (6K) - Con Kit Completo</option>
+            <option value="recreativa">Recreativa (3K) - Solo Medalla y Playera</option>
+          </select>
+
           {/* Status */}
           <select
             value={statusFilter}
@@ -476,6 +615,22 @@ export default function AdminParticipantesPage() {
             <option value="delivered">Kit Entregado</option>
             <option value="pending">Kit Pendiente</option>
           </select>
+
+          {(modalityFilter !== 'all' || statusFilter !== 'all' || sizeFilter !== 'all' || kitFilter !== 'all' || search) && (
+            <button
+              onClick={() => {
+                setModalityFilter('all');
+                setStatusFilter('all');
+                setSizeFilter('all');
+                setKitFilter('all');
+                setSearch('');
+              }}
+              className="px-2.5 py-2 text-[11px] font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors"
+              title="Limpiar todos los filtros"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
 
@@ -555,17 +710,30 @@ export default function AdminParticipantesPage() {
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                        <span className="text-slate-200 font-semibold">{p.category}</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${
-                          p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')
-                            ? 'bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/30'
-                            : 'bg-cyan-950 text-cyan-300 border border-cyan-500/30'
-                        }`}>
-                          {p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ') ? 'Recreativa' : 'Competitiva'}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-slate-400">{p.age} años ({p.gender})</div>
+                      {(() => {
+                        const isRec = p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ');
+                        return (
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                              <span className="text-slate-200 font-semibold">{p.category}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase ${
+                                isRec
+                                  ? 'bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-500/30'
+                                  : 'bg-cyan-950 text-cyan-300 border border-cyan-500/30'
+                              }`}>
+                                {isRec ? 'Recreativa (3K)' : 'Competitiva (6K)'}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[11px] text-slate-400">{p.age} años ({p.gender})</span>
+                              <span className="text-slate-600">•</span>
+                              <span className={`text-[10px] font-bold ${isRec ? 'text-amber-400' : 'text-cyan-400'}`}>
+                                {isRec ? 'Sin kit (Playera + Medalla)' : 'Incluye Kit Neón'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 px-4 font-black text-cyan-300 text-sm">
                       {p.shirtSize}
@@ -584,13 +752,27 @@ export default function AdminParticipantesPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                        p.kitDelivered
-                          ? 'bg-emerald-950 text-emerald-300'
-                          : 'bg-slate-800 text-slate-400'
-                      }`}>
-                        {p.kitDelivered ? '✓ Entregado' : 'No entregado'}
-                      </span>
+                      {(() => {
+                        const isRec = p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ');
+                        return (
+                          <div>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
+                              p.kitDelivered
+                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                                : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            }`}>
+                              {p.kitDelivered ? '✓ Entregado' : 'No entregado'}
+                            </span>
+                            <div className="text-[10px] text-slate-400 mt-1">
+                              {isRec ? (
+                                <span className="text-fuchsia-300/90 font-medium">Solo entrega playera</span>
+                              ) : (
+                                <span className="text-cyan-300/80 font-medium">Entrega kit completo</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-2">
@@ -682,6 +864,63 @@ export default function AdminParticipantesPage() {
                   onChange={e => setEditingParticipant({ ...editingParticipant, fullName: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Modalidad del Evento</label>
+                  <select
+                    value={
+                      editingParticipant.modality === 'Recreativa' || editingParticipant.category?.toLowerCase().includes('recreativ')
+                        ? 'Recreativa'
+                        : 'Competitiva'
+                    }
+                    onChange={e => {
+                      const newMod = e.target.value as 'Competitiva' | 'Recreativa';
+                      let newCat = editingParticipant.category;
+                      if (newMod === 'Recreativa') {
+                        newCat = 'Recreativa (Caminata/Trote)';
+                      } else if (newCat?.toLowerCase().includes('recreativ')) {
+                        newCat = 'Libre Varonil';
+                      }
+                      setEditingParticipant({
+                        ...editingParticipant,
+                        modality: newMod,
+                        category: newCat,
+                      });
+                    }}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-semibold"
+                  >
+                    <option value="Competitiva">Competitiva (6K) - Incluye Kit Completo</option>
+                    <option value="Recreativa">Recreativa (3K) - Solo Medalla y Playera</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 mb-1">Categoría</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingParticipant.category}
+                    onChange={e => setEditingParticipant({ ...editingParticipant, category: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                    placeholder="Ej. Libre Varonil, Master, Recreativa..."
+                  />
+                </div>
+              </div>
+
+              {/* Kit notice */}
+              <div className={`p-2.5 rounded-xl border text-[11px] flex items-center gap-2 ${
+                editingParticipant.modality === 'Recreativa' || editingParticipant.category?.toLowerCase().includes('recreativ')
+                  ? 'bg-fuchsia-950/40 border-fuchsia-500/40 text-fuchsia-300'
+                  : 'bg-cyan-950/40 border-cyan-500/40 text-cyan-300'
+              }`}>
+                <Package className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {editingParticipant.modality === 'Recreativa' || editingParticipant.category?.toLowerCase().includes('recreativ')
+                    ? '⚠️ Esta categoría Recreativa NO incluye kit completo (solo medalla conmemorativa y playera oficial).'
+                    : '✓ Esta categoría Competitiva incluye kit oficial completo: número, chip de cronometraje, pulsera neón, playera y medalla.'}
+                </span>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -957,19 +1196,22 @@ export default function AdminParticipantesPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-400 mb-1">Categoría Oficial *</label>
+                    <label className="block text-slate-400 mb-1">Modalidad y Categoría Oficial *</label>
                     <select
                       value={manualCategory}
                       onChange={e => {
                         setManualCategory(e.target.value);
-                        if (e.target.value === 'Varonil' || e.target.value === 'Femenil') {
-                          setManualGender(e.target.value as 'Varonil' | 'Femenil');
+                        if (e.target.value === 'Varonil') {
+                          setManualGender('Varonil');
+                        } else if (e.target.value === 'Femenil') {
+                          setManualGender('Femenil');
                         }
                       }}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-semibold"
                     >
-                      <option value="Varonil">Varonil (Única 6K)</option>
-                      <option value="Femenil">Femenil (Única 6K)</option>
+                      <option value="Varonil">Competitiva 6K - Varonil (Kit Completo)</option>
+                      <option value="Femenil">Competitiva 6K - Femenil (Kit Completo)</option>
+                      <option value="Recreativa">Recreativa 3K - Caminata/Trote (Solo Medalla + Playera)</option>
                     </select>
                   </div>
 
@@ -984,6 +1226,22 @@ export default function AdminParticipantesPage() {
                     />
                   </div>
                 </div>
+
+                {manualCategory === 'Recreativa' ? (
+                  <div className="p-2.5 rounded-xl bg-fuchsia-950/40 border border-fuchsia-500/40 text-[11px] text-fuchsia-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 flex-shrink-0 text-fuchsia-400" />
+                    <span>
+                      ⚠️ <strong>Modalidad Recreativa 3K:</strong> Solamente incluye medalla conmemorativa y playera oficial (NO incluye chip ni kit completo).
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-[11px] text-cyan-300 flex items-center gap-2">
+                    <Trophy className="w-4 h-4 flex-shrink-0 text-cyan-400" />
+                    <span>
+                      ✓ <strong>Modalidad Competitiva 6K:</strong> Incluye kit oficial completo con chip de cronometraje, número, pulsera neón, playera y medalla.
+                    </span>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
