@@ -61,6 +61,8 @@ export interface EventConfig {
   location: string;
   venueName: string;
   registrationOpen: boolean;
+  registrationClosingDate?: string; // ISO string e.g. 2026-10-15T20:00:00-06:00
+  registrationClosingText?: string; // e.g. 'Hoy a las 8:00 PM (Hora CDMX)'
   maxTotalQuota: number;
   currentTotalRegistered: number;
   scheduleTime: string;

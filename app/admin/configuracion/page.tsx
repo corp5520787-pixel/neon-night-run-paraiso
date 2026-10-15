@@ -11,9 +11,12 @@ import {
   RefreshCw,
   CheckCircle2,
   Loader2,
+  Clock,
+  Lock,
 } from 'lucide-react';
 import { EventConfig } from '@/lib/types';
 import { defaultEventConfig } from '@/lib/db';
+import { isRegistrationClosed } from '@/lib/registration-deadline';
 
 export default function AdminConfiguracionPage() {
   const [config, setConfig] = useState<EventConfig>(defaultEventConfig);
@@ -158,7 +161,61 @@ export default function AdminConfiguracionPage() {
           </div>
         </div>
 
-        {/* 2. Bank Details */}
+        {/* 2. Control de Cierre de Registros */}
+        <div className="bg-[#0b1120] border border-yellow-500/30 rounded-3xl p-6 space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Clock className="w-4 h-4 text-yellow-400" />
+              Control de Cierre de Registros (Hoy a las 8:00 PM)
+            </h2>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+              isRegistrationClosed(config)
+                ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                : 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+            }`}>
+              {isRegistrationClosed(config) ? '🚫 REGISTROS CERRADOS' : '🟢 REGISTROS ABIERTOS'}
+            </span>
+          </div>
+
+          <p className="text-xs text-slate-400">
+            Los registros se cierran de forma automática a la hora programada. Al cumplirse las 8:00 PM (hora CDMX), el sistema bloquea nuevas inscripciones y muestra el aviso de cierre al público.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block text-slate-400 mb-1">Estado de Registros</label>
+              <select
+                value={config.registrationOpen ? 'open' : 'closed'}
+                onChange={e => setConfig({ ...config, registrationOpen: e.target.value === 'open' })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+              >
+                <option value="open">Abiertos (Permitir inscripciones hasta la hora límite)</option>
+                <option value="closed">Cerrados Manualmente (Bloquear inmediatamente)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-slate-400 mb-1">Fecha y Hora de Cierre (ISO 8601)</label>
+              <input
+                type="text"
+                value={config.registrationClosingDate || '2026-10-15T20:00:00-06:00'}
+                onChange={e => setConfig({ ...config, registrationClosingDate: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white font-mono focus:outline-none focus:border-cyan-400"
+              />
+              <span className="text-[10px] text-slate-500">Ejemplo: 2026-10-15T20:00:00-06:00 (Hoy a las 8:00 PM CDMX)</span>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="block text-slate-400 mb-1">Texto Informativo de Cierre</label>
+              <input
+                type="text"
+                value={config.registrationClosingText || 'Hoy a las 8:00 PM (Hora CDMX)'}
+                onChange={e => setConfig({ ...config, registrationClosingText: e.target.value })}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Bank Details */}
         <div className="bg-[#0b1120] border border-fuchsia-500/30 rounded-3xl p-6 space-y-4">
           <h2 className="text-base font-bold text-white flex items-center gap-2">
             <Building2 className="w-4 h-4 text-fuchsia-400" />

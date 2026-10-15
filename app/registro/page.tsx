@@ -27,9 +27,14 @@ import {
   CheckCircle2,
   Users,
   X,
+  Lock,
+  Search,
+  MessageCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import { PricingStage, EventConfig, AmbassadorCode, ShirtSize, RaceModality } from '@/lib/types';
 import { defaultEventConfig, defaultPricingStages } from '@/lib/db';
+import { isRegistrationClosed } from '@/lib/registration-deadline';
 
 function calculateAge(birthDateString: string): number {
   if (!birthDateString) return 0;
@@ -213,6 +218,11 @@ function RegistroForm() {
       return;
     }
 
+    if (isRegistrationClosed(config)) {
+      setErrorMessage('Ya hemos cerrado los registros oficiales. El plazo concluyó hoy a las 8:00 PM (hora Ciudad de México).');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -265,9 +275,78 @@ function RegistroForm() {
     }
   };
 
+  const isClosed = isRegistrationClosed(config);
+
+  if (isClosed) {
+    return (
+      <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col justify-between selection:bg-rose-500 selection:text-white">
+        <Navbar isClosed={true} />
+
+        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 text-center flex-1 flex flex-col justify-center">
+          <div className="relative overflow-hidden rounded-3xl border-2 border-rose-500/60 bg-gradient-to-b from-[#1c0a15] via-[#0b1120] to-[#070b14] p-8 sm:p-14 shadow-[0_0_60px_rgba(244,63,94,0.3)]">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-rose-500/10 border-2 border-rose-500/40 text-rose-400 flex items-center justify-center mb-6 shadow-inner glow-magenta">
+              <Lock className="w-10 h-10 text-rose-400" />
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs font-black uppercase tracking-widest mb-4">
+              <span>Proceso de Inscripción Concluido</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight uppercase mb-4 leading-tight">
+              ¡YA HEMOS CERRADO LOS REGISTROS!
+            </h1>
+
+            <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-8 leading-relaxed">
+              El periodo oficial de registro para la carrera <strong className="text-white">Neon Night Run Paraíso 2026</strong> ha finalizado el día de hoy a las <strong className="text-rose-400 font-bold">8:00 de la noche (hora Ciudad de México)</strong>.
+            </p>
+
+            <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-6 text-left max-w-xl mx-auto mb-8 space-y-3">
+              <div className="flex items-center gap-2.5 text-yellow-400 font-bold text-sm">
+                <CheckCircle2 className="w-5 h-5 text-yellow-400 shrink-0" />
+                <span>¿Ya te habías registrado previamente?</span>
+              </div>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                Si llenaste tu registro antes del cierre de las 8:00 PM y tienes pendiente reportar tu comprobante de pago bancario o deseas consultar tu código QR y número de folio, tus datos siguen activos en nuestro sistema.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/participante"
+                className="w-full sm:w-auto px-7 py-4 rounded-xl font-black text-sm text-slate-950 bg-gradient-to-r from-cyan-400 to-cyan-300 hover:brightness-110 flex items-center justify-center gap-2 shadow-lg glow-cyan transition-all"
+              >
+                <Search className="w-4 h-4 text-slate-950" />
+                <span>Consultar Mi Folio / Estatus</span>
+              </Link>
+
+              <a
+                href="https://wa.me/529931234567?text=Hola,%20tengo%20dudas%20sobre%20mi%20inscripción%20en%20la%20Neon%20Night%20Run%20Paraíso"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-6 py-4 rounded-xl font-bold text-sm text-emerald-300 bg-emerald-950/80 border border-emerald-500/50 hover:bg-emerald-900/60 flex items-center justify-center gap-2 transition-all shadow-md"
+              >
+                <MessageCircle className="w-5 h-5 text-emerald-400" />
+                <span>Atención por WhatsApp</span>
+              </a>
+
+              <Link
+                href="/"
+                className="w-full sm:w-auto px-6 py-4 rounded-xl font-bold text-sm text-slate-300 bg-slate-900 border border-slate-700 hover:text-white transition-all"
+              >
+                <span>Volver al Inicio</span>
+              </Link>
+            </div>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
-      <Navbar />
+      <Navbar isClosed={isClosed} />
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Title Header */}
@@ -358,7 +437,7 @@ function RegistroForm() {
                       <div className="space-y-2.5 text-xs">
                         <div className="flex items-start gap-2.5 text-slate-200">
                           <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-                          <span><strong className="text-white font-bold">Número de competidor</strong> oficial</span>
+                          <span><strong className="text-white font-bold">Dorsal con número</strong> oficial</span>
                         </div>
                         <div className="flex items-start gap-2.5 text-slate-200">
                           <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />

@@ -31,9 +31,12 @@ import {
   Trophy,
   AlertCircle,
   HelpCircle,
+  Lock,
 } from 'lucide-react';
 import { EventConfig, PricingStage } from '@/lib/types';
 import { defaultEventConfig, defaultPricingStages } from '@/lib/db';
+import RegistrationClosingCountdown from '@/components/RegistrationClosingCountdown';
+import { isRegistrationClosed } from '@/lib/registration-deadline';
 
 export default function HomePage() {
   const [config, setConfig] = useState<EventConfig>(defaultEventConfig);
@@ -66,10 +69,11 @@ export default function HomePage() {
   const activeStage = stages.find(s => s.active && s.id !== 'stage-team') || stages[1] || stages[0];
   const quotaPercent = Math.min(100, Math.round((config.currentTotalRegistered / config.maxTotalQuota) * 100));
   const spotsLeft = Math.max(0, config.maxTotalQuota - config.currentTotalRegistered);
+  const isClosed = isRegistrationClosed(config);
 
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
-      <Navbar />
+      <Navbar isClosed={isClosed} />
 
       {/* ---------------------------------------------------------------------- */}
       {/* 1. HERO SECTION */}
@@ -96,12 +100,20 @@ export default function HomePage() {
           </h1>
 
           {/* Slogan */}
-          <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fuchsia-400 tracking-wide mb-8 text-glow-magenta uppercase">
+          <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-fuchsia-400 tracking-wide mb-6 text-glow-magenta uppercase">
             ¡Ilumina tu camino!
           </p>
 
-          {/* Countdown Timer */}
-          <div className="my-8">
+          {/* DEDICATED REGISTRATION CLOSING COUNTDOWN (HOY A LAS 8:00 PM HORA CDMX) */}
+          <div id="cierre-registros" className="mb-6">
+            <RegistrationClosingCountdown config={config} />
+          </div>
+
+          {/* Race Date Countdown Timer */}
+          <div className="my-6">
+            <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+              Tiempo para el gran día del evento:
+            </div>
             <CountdownTimer targetDate={config.isoDate} />
           </div>
 
@@ -109,9 +121,9 @@ export default function HomePage() {
           <div className="max-w-xl mx-auto bg-[#0b1120]/90 backdrop-blur-md border border-cyan-500/30 rounded-2xl p-4 sm:p-5 mb-8 text-left shadow-2xl">
             <div className="flex items-center justify-between gap-2 mb-2">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs font-bold text-yellow-400 uppercase tracking-wider animate-pulse">
-                  ¡QUEDAN POCOS LUGARES!
+                <span className={`w-2.5 h-2.5 rounded-full ${isClosed ? 'bg-rose-400' : 'bg-emerald-400 animate-ping'}`} />
+                <span className={`text-xs font-bold uppercase tracking-wider ${isClosed ? 'text-rose-400' : 'text-yellow-400 animate-pulse'}`}>
+                  {isClosed ? 'REGISTROS CONCLUIDOS' : '¡QUEDAN POCOS LUGARES!'}
                 </span>
               </div>
               <span className="text-xl sm:text-2xl font-black text-yellow-400 font-mono">
@@ -128,20 +140,32 @@ export default function HomePage() {
             </div>
             <div className="flex justify-between items-center text-xs text-slate-400 mt-2">
               <span>{config.currentTotalRegistered} corredores inscritos</span>
-              <span className="font-semibold text-cyan-300">¡Quedan {spotsLeft} lugares disponibles!</span>
+              <span className="font-semibold text-cyan-300">
+                {isClosed ? 'Periodo finalizado a las 8:00 PM' : `¡Quedan ${spotsLeft} lugares disponibles!`}
+              </span>
             </div>
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <Link
-              href="#etapas"
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan flex items-center justify-center gap-3 shadow-xl"
-            >
-              <Ticket className="w-5 h-5 text-slate-950" />
-              <span>Inscribirme ahora</span>
-              <ArrowRight className="w-5 h-5 text-slate-950" />
-            </Link>
+            {!isClosed ? (
+              <Link
+                href="/registro"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan flex items-center justify-center gap-3 shadow-xl"
+              >
+                <Ticket className="w-5 h-5 text-slate-950" />
+                <span>Inscribirme ahora</span>
+                <ArrowRight className="w-5 h-5 text-slate-950" />
+              </Link>
+            ) : (
+              <Link
+                href="/registro"
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base text-rose-200 bg-rose-950/80 border-2 border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center justify-center gap-3 shadow-xl"
+              >
+                <Lock className="w-5 h-5 text-rose-400" />
+                <span>Registros Cerrados (8:00 PM)</span>
+              </Link>
+            )}
 
             <Link
               href="#kit"
@@ -240,7 +264,7 @@ export default function HomePage() {
               <ul className="space-y-2.5 text-xs text-slate-300 mb-6">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span><strong className="text-white">Número de competidor</strong> oficial</span>
+                  <span><strong className="text-white">Dorsal con número</strong> oficial</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -261,14 +285,24 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <Link
-              href="/registro?modalidad=Competitiva"
-              className="w-full py-3.5 rounded-xl font-black text-sm text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/50"
-            >
-              <Ticket className="w-4 h-4 text-slate-950" />
-              <span>INSCRIBIRME AHORA</span>
-              <ArrowRight className="w-4 h-4 text-slate-950" />
-            </Link>
+            {!isClosed ? (
+              <Link
+                href="/registro?modalidad=Competitiva"
+                className="w-full py-3.5 rounded-xl font-black text-sm text-slate-950 bg-cyan-400 hover:bg-cyan-300 transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/50"
+              >
+                <Ticket className="w-4 h-4 text-slate-950" />
+                <span>INSCRIBIRME AHORA</span>
+                <ArrowRight className="w-4 h-4 text-slate-950" />
+              </Link>
+            ) : (
+              <Link
+                href="/registro"
+                className="w-full py-3.5 rounded-xl font-black text-sm text-rose-200 bg-rose-950/80 border border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Lock className="w-4 h-4 text-rose-400" />
+                <span>REGISTROS CERRADOS</span>
+              </Link>
+            )}
           </div>
 
           {/* Card 2: RECREATIVA 3K ($250 MXN) */}
@@ -310,14 +344,24 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <Link
-              href="/registro?modalidad=Recreativa"
-              className="w-full py-3.5 rounded-xl font-black text-sm text-white bg-fuchsia-600 hover:bg-fuchsia-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-fuchsia-950/50"
-            >
-              <Ticket className="w-4 h-4" />
-              <span>INSCRIBIRME AHORA</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            {!isClosed ? (
+              <Link
+                href="/registro?modalidad=Recreativa"
+                className="w-full py-3.5 rounded-xl font-black text-sm text-white bg-fuchsia-600 hover:bg-fuchsia-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-fuchsia-950/50"
+              >
+                <Ticket className="w-4 h-4" />
+                <span>INSCRIBIRME AHORA</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <Link
+                href="/registro"
+                className="w-full py-3.5 rounded-xl font-black text-sm text-rose-200 bg-rose-950/80 border border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <Lock className="w-4 h-4 text-rose-400" />
+                <span>REGISTROS CERRADOS</span>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -515,16 +559,32 @@ export default function HomePage() {
             Inscríbete hoy mismo de forma individual o con tu equipo. ¡Los lugares y tallas se agotan con rapidez!
           </p>
 
-          <Link
-            href="#etapas"
-            className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan shadow-2xl"
-          >
-            <Ticket className="w-6 h-6 text-slate-950" />
-            <span>Inscribirme a la carrera</span>
-            <ArrowRight className="w-6 h-6 text-slate-950" />
-          </Link>
+          {!isClosed ? (
+            <Link
+              href="/registro"
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all transform hover:-translate-y-1 active:translate-y-0 glow-cyan shadow-2xl"
+            >
+              <Ticket className="w-6 h-6 text-slate-950" />
+              <span>Inscribirme a la carrera</span>
+              <ArrowRight className="w-6 h-6 text-slate-950" />
+            </Link>
+          ) : (
+            <Link
+              href="/registro"
+              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-rose-200 bg-rose-950/80 border-2 border-rose-500/50 hover:bg-rose-900/60 transition-all shadow-2xl"
+            >
+              <Lock className="w-6 h-6 text-rose-400" />
+              <span>Registros Cerrados (8:00 PM)</span>
+            </Link>
+          )}
         </div>
       </section>
+
+      <StickyMobileBar
+        currentPrice={activeStage?.price || 350}
+        stageName={activeStage?.name || 'Etapa 2'}
+        isClosed={isClosed}
+      />
 
       <Footer />
     </div>

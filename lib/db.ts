@@ -15,6 +15,7 @@ import {
 } from './types';
 import { generateParticipantToken, generateQRCodeDataUrl } from './qr';
 import { resolvePublicAppUrl } from './app-url';
+import { isRegistrationClosed } from './registration-deadline';
 import { db } from './firebase';
 import { 
   collection, 
@@ -44,6 +45,8 @@ export const defaultEventConfig: EventConfig = {
   location: 'Paraíso, Tabasco, México',
   venueName: 'Malecón Turístico y Puerto de Paraíso',
   registrationOpen: true,
+  registrationClosingDate: '2026-10-15T20:00:00-06:00',
+  registrationClosingText: 'Hoy a las 8:00 PM (Hora CDMX)',
   maxTotalQuota: 350,
   currentTotalRegistered: 100,
   scheduleTime: '19:30 hrs (Calentamiento 18:45 hrs)',
@@ -794,8 +797,9 @@ export async function getEventConfig(): Promise<EventConfig> {
       await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
       recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
     }
-    if (data.maxTotalQuota !== 350) {
-      data.maxTotalQuota = 350;
+    if (!data.registrationClosingDate) {
+      data.registrationClosingDate = '2026-10-15T20:00:00-06:00';
+      data.registrationClosingText = 'Hoy a las 8:00 PM (Hora CDMX)';
       await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
       recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
     }
@@ -1095,6 +1099,11 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
   
   if (config.currentTotalRegistered + params.participants.length > config.maxTotalQuota) {
     throw new Error('No hay suficientes lugares disponibles para el cupo solicitado.');
+  }
+
+  // Verificar si ya cerraron los registros para inscripciones públicas online
+  if (isRegistrationClosed(config) && params.paymentMethod !== 'courtesy' && params.paymentMethod !== 'cash') {
+    throw new Error('Ya hemos cerrado los registros oficiales. El plazo de inscripciones concluyó hoy a las 8:00 PM (hora Ciudad de México).');
   }
 
   // Determine individual prices based on modality

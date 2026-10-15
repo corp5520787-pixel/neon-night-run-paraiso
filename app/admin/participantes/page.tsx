@@ -524,7 +524,7 @@ export default function AdminParticipantesPage() {
             {participants.filter(p => p.modality !== 'Recreativa' && !p.category?.toLowerCase().includes('recreativ')).length}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            Incluye kit completo, chip cronometraje, medalla y playera
+            Incluye kit completo, dorsal con número
           </div>
         </div>
 
@@ -966,7 +966,7 @@ export default function AdminParticipantesPage() {
                 <span>
                   {editingParticipant.modality === 'Recreativa' || editingParticipant.category?.toLowerCase().includes('recreativ')
                     ? '⚠️ Esta categoría Recreativa NO incluye kit completo (solo medalla conmemorativa y playera oficial).'
-                    : '✓ Esta categoría Competitiva incluye kit oficial completo: número, chip de cronometraje, pulsera neón, playera y medalla.'}
+                    : '✓ Esta categoría Competitiva incluye kit oficial completo: dorsal con número, pulsera neón, playera y medalla.'}
                 </span>
               </div>
 
@@ -1285,7 +1285,7 @@ export default function AdminParticipantesPage() {
                   <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-[11px] text-cyan-300 flex items-center gap-2">
                     <Trophy className="w-4 h-4 flex-shrink-0 text-cyan-400" />
                     <span>
-                      ✓ <strong>Modalidad Competitiva 6K:</strong> Incluye kit oficial completo con chip de cronometraje, número, pulsera neón, playera y medalla.
+                      ✓ <strong>Modalidad Competitiva 6K:</strong> Incluye kit oficial completo con dorsal con número, pulsera neón, playera y medalla.
                     </span>
                   </div>
                 )}

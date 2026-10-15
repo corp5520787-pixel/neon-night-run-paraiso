@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOrder, getOrders, findDuplicateParticipant } from '@/lib/db';
+import { createOrder, getOrders, findDuplicateParticipant, getEventConfig } from '@/lib/db';
+import { isRegistrationClosed } from '@/lib/registration-deadline';
 import { createMercadoPagoPreference } from '@/lib/mercadopago';
 import { sendConfirmationEmail, sendPendingRegistrationEmail } from '@/lib/email';
 import { resolvePublicAppUrl } from '@/lib/app-url';
@@ -33,6 +34,18 @@ export async function POST(req: NextRequest) {
       paymentStatus,
       transferReceiptUrl,
     } = body;
+
+    // Check if registrations have officially closed (unless manual cash or courtesy by staff)
+    const eventConfig = await getEventConfig();
+    if (isRegistrationClosed(eventConfig) && paymentMethod !== 'cash' && paymentMethod !== 'courtesy') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Ya hemos cerrado los registros oficiales. El plazo concluyó hoy a las 8:00 PM (hora Ciudad de México).',
+        },
+        { status: 403 }
+      );
+    }
 
     // Server-side validation
     if (!customerName || !customerEmail || !customerPhone) {

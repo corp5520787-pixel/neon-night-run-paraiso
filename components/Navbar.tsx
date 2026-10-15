@@ -1,11 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Sparkles, Calendar, MapPin, Menu, X, ShieldAlert, Ticket, UserCheck } from 'lucide-react';
+import { Sparkles, Calendar, MapPin, Menu, X, ShieldAlert, Ticket, UserCheck, Lock } from 'lucide-react';
+import { isRegistrationClosed } from '@/lib/registration-deadline';
 
-export default function Navbar() {
+interface NavbarProps {
+  isClosed?: boolean;
+}
+
+export default function Navbar({ isClosed: propIsClosed }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [closedState, setClosedState] = useState(propIsClosed ?? false);
+
+  useEffect(() => {
+    if (propIsClosed !== undefined) {
+      setClosedState(propIsClosed);
+      return;
+    }
+    const checkClosed = () => {
+      setClosedState(isRegistrationClosed());
+    };
+    checkClosed();
+    const interval = setInterval(checkClosed, 5000);
+    return () => clearInterval(interval);
+  }, [propIsClosed]);
 
   return (
     <header className="sticky top-0 z-50 bg-[#060913]/90 backdrop-blur-md border-b border-cyan-500/20">
@@ -46,13 +65,23 @@ export default function Navbar() {
 
         {/* Action Button */}
         <div className="hidden sm:flex items-center gap-3">
-          <Link
-            href="/registro"
-            className="px-5 py-2.5 rounded-xl font-extrabold text-sm text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all glow-cyan flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <Ticket className="w-4 h-4 text-slate-950" />
-            Inscribirme ahora
-          </Link>
+          {!closedState ? (
+            <Link
+              href="/registro"
+              className="px-5 py-2.5 rounded-xl font-extrabold text-sm text-slate-950 bg-gradient-to-r from-cyan-400 via-cyan-300 to-fuchsia-400 hover:from-cyan-300 hover:to-fuchsia-300 transition-all glow-cyan flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <Ticket className="w-4 h-4 text-slate-950" />
+              Inscribirme ahora
+            </Link>
+          ) : (
+            <Link
+              href="/registro"
+              className="px-4 py-2.5 rounded-xl font-extrabold text-xs text-rose-300 bg-rose-950/80 border border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center gap-2 shadow-sm"
+            >
+              <Lock className="w-4 h-4 text-rose-400" />
+              Registros Cerrados
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Trigger */}
@@ -100,14 +129,25 @@ export default function Navbar() {
             </Link>
           </div>
           <div className="pt-2">
-            <Link
-              href="/registro"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-3 rounded-xl font-extrabold text-sm text-slate-950 bg-gradient-to-r from-cyan-400 to-fuchsia-400 flex items-center justify-center gap-2 glow-cyan"
-            >
-              <Ticket className="w-4 h-4" />
-              Inscribirme ahora
-            </Link>
+            {!closedState ? (
+              <Link
+                href="/registro"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-3 rounded-xl font-extrabold text-sm text-slate-950 bg-gradient-to-r from-cyan-400 to-fuchsia-400 flex items-center justify-center gap-2 glow-cyan"
+              >
+                <Ticket className="w-4 h-4" />
+                Inscribirme ahora
+              </Link>
+            ) : (
+              <Link
+                href="/registro"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full py-3 rounded-xl font-extrabold text-sm text-rose-300 bg-rose-950/80 border border-rose-500/50 flex items-center justify-center gap-2 shadow-sm"
+              >
+                <Lock className="w-4 h-4 text-rose-400" />
+                Registros Cerrados
+              </Link>
+            )}
           </div>
         </div>
       )}
