@@ -51,6 +51,22 @@ export default function AdminParticipantesPage() {
   const [recentlySentFolio, setRecentlySentFolio] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
+  // Toast notification state
+  const [toast, setToast] = useState<{
+    id: number;
+    title: string;
+    subtitle?: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+
+  const showToast = (title: string, subtitle?: string, type: 'success' | 'error' | 'info' = 'success') => {
+    const id = Date.now();
+    setToast({ id, title, subtitle, type });
+    setTimeout(() => {
+      setToast(curr => (curr?.id === id ? null : curr));
+    }, 5500);
+  };
+
   // Manual / Courtesy form states
   const [showManualModal, setShowManualModal] = useState(false);
   const [manualName, setManualName] = useState('');
@@ -191,30 +207,36 @@ export default function AdminParticipantesPage() {
     if (!editingParticipant) return;
     setSubmittingModal(true);
     try {
-      const res = await fetch(`/api/participants/${editingParticipant.folio}`, {
+      const res = await fetch(`/api/participants/${editingParticipant.folio || editingParticipant.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullName: editingParticipant.fullName,
+          email: editingParticipant.email,
           phone: editingParticipant.phone,
           shirtSize: editingParticipant.shirtSize,
           category: editingParticipant.category,
           modality: editingParticipant.modality,
+          status: editingParticipant.status,
+          kitDelivered: editingParticipant.kitDelivered,
           emergencyContact: editingParticipant.emergencyContact,
           emergencyPhone: editingParticipant.emergencyPhone,
           clubOrTeam: editingParticipant.clubOrTeam,
         }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        const name = editingParticipant.fullName;
+        const folio = editingParticipant.folio;
         setEditingParticipant(null);
-        setSuccessNotification('Modificación realizada con éxito.');
-        setTimeout(() => setSuccessNotification(null), 4000);
+        showToast('¡Información guardada con éxito!', `Los datos de ${name} (${folio}) se actualizaron correctamente.`, 'success');
         fetchParticipants();
       } else {
-        alert('Error al guardar los cambios del participante');
+        showToast('Error al guardar', data.error || 'No se pudieron guardar los cambios del participante.', 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving participant:', err);
+      showToast('Error de conexión', 'No se pudo conectar con el servidor para guardar.', 'error');
     } finally {
       setSubmittingModal(false);
     }
@@ -222,19 +244,24 @@ export default function AdminParticipantesPage() {
 
   const confirmDeleteParticipant = async () => {
     if (!participantToDelete) return;
+    const deletedName = participantToDelete.fullName;
+    const deletedFolio = participantToDelete.folio;
     setSubmittingModal(true);
     try {
-      const res = await fetch(`/api/participants/${participantToDelete.folio}`, {
+      const res = await fetch(`/api/participants/${participantToDelete.folio || participantToDelete.id}`, {
         method: 'DELETE',
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setParticipantToDelete(null);
+        showToast('¡Participante eliminado con éxito!', `El registro de ${deletedName} (${deletedFolio}) fue eliminado de la base de datos.`, 'success');
         fetchParticipants();
       } else {
-        alert('Error al eliminar el participante');
+        showToast('Error al eliminar', data.error || 'No se pudo eliminar el registro del participante.', 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting participant:', err);
+      showToast('Error de conexión', 'No se pudo conectar con el servidor para eliminar.', 'error');
     } finally {
       setSubmittingModal(false);
     }
@@ -243,7 +270,7 @@ export default function AdminParticipantesPage() {
   const handleCancelAndReleaseSpot = async (p: Participant) => {
     setSubmittingModal(true);
     try {
-      const res = await fetch(`/api/participants/${p.folio}/cancel`, {
+      const res = await fetch(`/api/participants/${p.folio || p.id}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -251,19 +278,62 @@ export default function AdminParticipantesPage() {
           notifyUser: true,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setParticipantToDelete(null);
-        setSuccessNotification(`Lugar liberado para ${p.fullName}. Se guardó en "No Pagados" para futuras carreras.`);
-        setTimeout(() => setSuccessNotification(null), 5000);
+        showToast('¡Lugar liberado con éxito!', `El cupo de ${p.fullName} (${p.folio}) fue liberado y se conservó en No Pagados.`, 'success');
         fetchParticipants();
       } else {
-        alert(data.error || 'Error al liberar lugar');
+        showToast('Error al liberar lugar', data.error || 'No se pudo liberar el lugar.', 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error cancelling and releasing spot:', err);
+      showToast('Error de conexión', 'No se pudo conectar con el servidor para liberar lugar.', 'error');
     } finally {
       setSubmittingModal(false);
+    }
+  };
+
+  const handleToggleKitDelivery = async (p: Participant) => {
+    try {
+      if (!p.kitDelivered) {
+        const res = await fetch(`/api/participants/${p.folio || p.id}/deliver-kit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            staffEmail: 'admin@neonnightrunparaiso.mx',
+            staffName: 'Administrador (Panel)',
+            notes: 'Entrega manual registrada desde tabla de participantes',
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          showToast('¡Kit entregado con éxito!', `Se registró la entrega del kit oficial a ${p.fullName} (${p.folio}).`, 'success');
+          fetchParticipants();
+        } else {
+          showToast('Error al entregar kit', data.message || 'No se pudo registrar la entrega.', 'error');
+        }
+      } else {
+        const res = await fetch(`/api/participants/${p.folio || p.id}/revert-kit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            adminEmail: 'admin@neonnightrunparaiso.mx',
+            adminName: 'Administrador',
+            reason: 'Revertido manualmente desde tabla de participantes',
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          showToast('¡Entrega de kit revertida!', `Se desmarcó la entrega del kit a ${p.fullName} (${p.folio}).`, 'info');
+          fetchParticipants();
+        } else {
+          showToast('Error al revertir kit', data.message || 'No se pudo revertir la entrega.', 'error');
+        }
+      }
+    } catch (err: any) {
+      console.error('Error toggling kit delivery:', err);
+      showToast('Error de conexión', 'No se pudo actualizar la entrega de kit.', 'error');
     }
   };
 
@@ -273,11 +343,10 @@ export default function AdminParticipantesPage() {
       const res = await fetch(`/api/participants/${p.folio}/resend-email`, {
         method: 'POST',
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setRecentlySentFolio(p.folio);
-        setSuccessNotification(`¡El correo se envió con éxito! (QR enviado a ${p.email})`);
-        setFeedbackMessage(`¡El correo se envió con éxito! Código QR y folio ${p.folio} enviados a ${p.email}`);
+        showToast('¡Correo reenviado con éxito!', `Boleto y código QR oficial enviados a ${p.email}.`, 'success');
 
         // Update participant state locally so the UI immediately reflects the dispatch
         setParticipants(prev =>
@@ -296,18 +365,12 @@ export default function AdminParticipantesPage() {
         setTimeout(() => {
           setRecentlySentFolio(null);
         }, 5000);
-
-        setTimeout(() => {
-          setSuccessNotification(null);
-        }, 6000);
       } else {
-        setSuccessNotification(data.error || 'Error al reenviar el correo.');
-        setTimeout(() => setSuccessNotification(null), 5000);
+        showToast('Error al enviar correo', data.error || 'No se pudo enviar el correo oficial.', 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error resending email:', err);
-      setSuccessNotification('Error de conexión al reenviar el correo.');
-      setTimeout(() => setSuccessNotification(null), 5000);
+      showToast('Error de conexión', 'No se pudo conectar con el servidor de correos.', 'error');
     } finally {
       setResendingEmailFolio(null);
     }
@@ -342,10 +405,11 @@ export default function AdminParticipantesPage() {
       const isApprovedDirectly = manualPaymentType === 'cash' || manualPaymentType === 'courtesy' || manualPaymentType === 'transfer';
 
       const payload = {
+        isManualAdmin: true,
         customerName: manualName.trim(),
         customerEmail: manualEmail.trim(),
         customerPhone: manualPhone.trim(),
-        paymentMethod: manualPaymentType === 'courtesy' ? 'courtesy' : 'transfer',
+        paymentMethod: manualPaymentType === 'courtesy' ? 'courtesy' : manualPaymentType === 'cash' ? 'cash' : 'transfer',
         paymentStatus: isApprovedDirectly ? 'approved' : 'pending',
         participants: [
           {
@@ -384,7 +448,7 @@ export default function AdminParticipantesPage() {
 
       setModalSuccessMsg(`¡Participante registrado exitosamente! Folio: ${createdRunner?.folio || 'Asignado'}`);
       
-      // Reset form
+      // Reset form and show toast on main screen
       setTimeout(() => {
         setShowManualModal(false);
         setManualName('');
@@ -394,11 +458,17 @@ export default function AdminParticipantesPage() {
         setManualEmergencyPhone('');
         setManualClub('');
         setModalSuccessMsg(null);
+        showToast(
+          '¡Registro manual exitoso!',
+          `Corredor ${createdRunner?.fullName || manualName.trim()} guardado con folio ${createdRunner?.folio || 'asignado'}.`,
+          'success'
+        );
         fetchParticipants();
-      }, 1200);
+      }, 1000);
 
     } catch (err: any) {
       setModalErrorMsg(err.message || 'Error al registrar participante');
+      showToast('Error en el registro', err.message || 'No se pudo completar el registro.', 'error');
     } finally {
       setSubmittingModal(false);
     }
@@ -406,21 +476,41 @@ export default function AdminParticipantesPage() {
 
   return (
     <div className="space-y-6 relative">
-      {/* SUCCESS FLOATING NOTIFICATION */}
-      {successNotification && (
-        <div className="fixed top-6 right-6 z-50 p-4 max-w-md bg-[#051c14] border-2 border-emerald-400/80 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-emerald-200 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300">
+      {/* RICH FLOATING TOAST NOTIFICATION */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 p-4 max-w-md border-2 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300 ${
+          toast.type === 'success'
+            ? 'bg-[#051c14] border-emerald-400 text-emerald-200'
+            : toast.type === 'error'
+            ? 'bg-[#2a080c] border-rose-500 text-rose-200'
+            : 'bg-[#061826] border-cyan-400 text-cyan-200'
+        }`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center flex-shrink-0">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              toast.type === 'success'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : toast.type === 'error'
+                ? 'bg-rose-500/20 text-rose-400'
+                : 'bg-cyan-500/20 text-cyan-400'
+            }`}>
+              {toast.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : toast.type === 'error' ? (
+                <AlertTriangle className="w-5 h-5" />
+              ) : (
+                <Sparkles className="w-5 h-5" />
+              )}
             </div>
             <div>
-              <div className="text-white text-sm font-extrabold">{successNotification}</div>
-              <div className="text-[11px] text-emerald-300/80 font-normal">Código QR y boleto oficial despachados correctamente.</div>
+              <div className="text-white text-sm font-extrabold">{toast.title}</div>
+              {toast.subtitle && (
+                <div className="text-[11px] opacity-90 font-normal mt-0.5">{toast.subtitle}</div>
+              )}
             </div>
           </div>
           <button
-            onClick={() => setSuccessNotification(null)}
-            className="p-1 rounded-lg text-emerald-400 hover:text-white hover:bg-emerald-900/50 transition-colors flex-shrink-0"
+            onClick={() => setToast(null)}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -804,13 +894,18 @@ export default function AdminParticipantesPage() {
                         const isRec = p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ');
                         return (
                           <div>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${
-                              p.kitDelivered
-                                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
-                                : 'bg-slate-800 text-slate-400 border border-slate-700'
-                            }`}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleKitDelivery(p)}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                                p.kitDelivered
+                                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/50 hover:bg-emerald-900/60 shadow-sm'
+                                  : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 hover:text-white'
+                              }`}
+                              title={p.kitDelivered ? 'Clic para revertir entrega de kit' : 'Clic para marcar kit como entregado'}
+                            >
                               {p.kitDelivered ? '✓ Entregado' : 'No entregado'}
-                            </span>
+                            </button>
                             <div className="text-[10px] text-slate-400 mt-1">
                               {isRec ? (
                                 <span className="text-fuchsia-300/90 font-medium">Solo entrega playera</span>
@@ -971,6 +1066,55 @@ export default function AdminParticipantesPage() {
                 </span>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Correo Electrónico</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingParticipant.email}
+                    onChange={e => setEditingParticipant({ ...editingParticipant, email: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Teléfono</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editingParticipant.phone}
+                    onChange={e => setEditingParticipant({ ...editingParticipant, phone: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Estatus del Registro</label>
+                  <select
+                    value={editingParticipant.status}
+                    onChange={e => setEditingParticipant({ ...editingParticipant, status: e.target.value as any })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-bold"
+                  >
+                    <option value="confirmed">Confirmado (Con Folio Oficial Activo)</option>
+                    <option value="pending">Pendiente de Pago (En Espera)</option>
+                    <option value="cancelled">Cancelado / No Pagado (Lugar Liberado)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Entrega de Kit Oficial</label>
+                  <select
+                    value={editingParticipant.kitDelivered ? 'yes' : 'no'}
+                    onChange={e => setEditingParticipant({ ...editingParticipant, kitDelivered: e.target.value === 'yes' })}
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400 font-bold"
+                  >
+                    <option value="no">No entregado (Pendiente)</option>
+                    <option value="yes">✓ Entregado</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-400 mb-1">Talla de Playera</label>
@@ -989,12 +1133,11 @@ export default function AdminParticipantesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-400 mb-1">Teléfono</label>
+                  <label className="block text-slate-400 mb-1">Club o Empresa</label>
                   <input
-                    type="tel"
-                    required
-                    value={editingParticipant.phone}
-                    onChange={e => setEditingParticipant({ ...editingParticipant, phone: e.target.value })}
+                    type="text"
+                    value={editingParticipant.clubOrTeam || ''}
+                    onChange={e => setEditingParticipant({ ...editingParticipant, clubOrTeam: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
@@ -1021,16 +1164,6 @@ export default function AdminParticipantesPage() {
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Club o Empresa</label>
-                <input
-                  type="text"
-                  value={editingParticipant.clubOrTeam || ''}
-                  onChange={e => setEditingParticipant({ ...editingParticipant, clubOrTeam: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-cyan-400"
-                />
               </div>
 
               <div className="pt-4 border-t border-slate-800 flex justify-end gap-2">
@@ -1407,13 +1540,14 @@ export default function AdminParticipantesPage() {
             </p>
 
             <div className="space-y-3 mb-6">
-              <div className="p-3.5 bg-rose-950/30 border border-rose-500/30 rounded-xl">
-                <div className="text-xs font-bold text-rose-300 flex items-center justify-between mb-1">
-                  <span>Recomendado si no pagó (más de 5 días)</span>
-                  <span className="text-[10px] uppercase bg-rose-900/60 px-2 py-0.5 rounded text-rose-200">Conserva datos</span>
+              {/* Option 1: Release spot */}
+              <div className="p-3.5 bg-amber-950/30 border border-amber-500/30 rounded-xl">
+                <div className="text-xs font-bold text-amber-300 flex items-center justify-between mb-1">
+                  <span>Opción 1: Liberar Cupo (Recomendado)</span>
+                  <span className="text-[10px] uppercase bg-amber-900/60 px-2 py-0.5 rounded text-amber-200">Conserva datos</span>
                 </div>
                 <p className="text-[11px] text-slate-300 leading-normal">
-                  <strong>Liberar lugar y mover a &quot;No Pagados&quot;</strong>: Su lugar de los 350 se libera para otro corredor y se le envía el correo de notificación. Sus datos se guardan en la base de datos para invitarlo a futuras carreras.
+                  Su lugar de los 350 se libera para otro corredor y se mueve a la lista de &quot;No Pagados&quot;. Se guardan sus datos para invitarlo a futuras ediciones.
                 </p>
                 <button
                   type="button"
@@ -1422,26 +1556,36 @@ export default function AdminParticipantesPage() {
                   className="mt-2.5 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors shadow"
                 >
                   <UserX className="w-4 h-4" />
-                  <span>Liberar Lugar y Guardar en No Pagados</span>
+                  <span>{submittingModal ? 'Procesando...' : 'Liberar Lugar y Guardar en No Pagados'}</span>
+                </button>
+              </div>
+
+              {/* Option 2: Delete permanently */}
+              <div className="p-3.5 bg-rose-950/30 border border-rose-500/30 rounded-xl">
+                <div className="text-xs font-bold text-rose-300 flex items-center justify-between mb-1">
+                  <span>Opción 2: Eliminación Total</span>
+                  <span className="text-[10px] uppercase bg-rose-900/60 px-2 py-0.5 rounded text-rose-200">Irreversible</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-normal">
+                  Borra el participante completamente tanto de la base de datos local como de Firebase Firestore. Su folio y registro desaparecerán de inmediato.
+                </p>
+                <button
+                  type="button"
+                  onClick={confirmDeleteParticipant}
+                  disabled={submittingModal}
+                  className="mt-2.5 w-full py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors shadow"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{submittingModal ? 'Eliminando...' : 'Eliminar Definitivamente de la Base de Datos'}</span>
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={confirmDeleteParticipant}
-                disabled={submittingModal}
-                className="text-xs text-rose-400 hover:text-rose-300 underline font-medium"
-                title="Eliminar de la base de datos definitivamente"
-              >
-                Eliminar definitivamente de la base de datos
-              </button>
-
+            <div className="flex justify-end pt-2 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setParticipantToDelete(null)}
-                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold transition-colors text-xs"
+                className="px-5 py-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 font-semibold transition-colors text-xs"
               >
                 Cancelar
               </button>

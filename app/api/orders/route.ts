@@ -35,9 +35,10 @@ export async function POST(req: NextRequest) {
       transferReceiptUrl,
     } = body;
 
-    // Check if registrations have officially closed (unless manual cash or courtesy by staff)
+    // Check if registrations have officially closed (unless manual registration by staff/admin)
     const eventConfig = await getEventConfig();
-    if (isRegistrationClosed(eventConfig) && paymentMethod !== 'cash' && paymentMethod !== 'courtesy') {
+    const isManual = body.isManualAdmin || paymentMethod === 'cash' || paymentMethod === 'courtesy';
+    if (isRegistrationClosed(eventConfig) && !isManual) {
       return NextResponse.json(
         {
           success: false,
