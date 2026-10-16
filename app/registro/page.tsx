@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { PricingStage, EventConfig, AmbassadorCode, ShirtSize, RaceModality } from '@/lib/types';
-import { defaultEventConfig, defaultPricingStages } from '@/lib/db';
+import { defaultEventConfig, defaultPricingStages } from '@/lib/db-defaults';
 import { isRegistrationClosed } from '@/lib/registration-deadline';
 
 function calculateAge(birthDateString: string): number {

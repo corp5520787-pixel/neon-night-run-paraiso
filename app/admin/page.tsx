@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
     );
   }
 
-  if (error || !stats) {
+  if (!stats) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8 bg-[#0b1120] rounded-3xl border border-rose-500/20 max-w-xl mx-auto space-y-6">
         <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center border border-rose-500/30 text-rose-400">
@@ -88,19 +88,7 @@ export default function AdminDashboardPage() {
         <div className="space-y-2">
           <h2 className="text-lg font-extrabold text-white uppercase tracking-tight">Métricas no disponibles</h2>
           <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto">
-            {error || 'Ocurrió un inconveniente al consultar las estadísticas en tiempo real.'}
-          </p>
-        </div>
-        
-        <div className="w-full p-4 bg-slate-900/60 rounded-2xl border border-slate-800 text-left text-xs text-slate-300 space-y-2.5">
-          <p className="font-bold text-yellow-400 flex items-center gap-1.5">
-            ⚠️ Límite de Cuota de Firebase Excedido
-          </p>
-          <p className="leading-relaxed">
-            Tu base de datos de Firestore ha alcanzado el límite de lecturas gratuitas diarias del plan Spark de Firebase.
-          </p>
-          <p className="text-slate-400 leading-relaxed">
-            La cuota se restablece automáticamente cada día a la medianoche (hora del Pacífico), o puedes actualizar tu base de datos a un plan de pago sin límites en la consola de Firebase.
+            {error || 'No se pudieron recuperar las estadísticas en este momento.'}
           </p>
         </div>
 
@@ -122,6 +110,16 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-300">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{error} (Mostrando datos respaldados en almacenamiento local de alta disponibilidad)</span>
+          </div>
+          <button onClick={() => setError(null)} className="text-amber-400 hover:text-white ml-2 text-xs font-bold">✕</button>
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

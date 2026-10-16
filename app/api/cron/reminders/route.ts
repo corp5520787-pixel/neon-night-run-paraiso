@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Participant, Order } from '@/lib/types';
 import { sendPaymentReminderEmail, sendCancellationEmail } from '@/lib/email';
-import { getEventConfig } from '@/lib/db';
+import { getEventConfig, getParticipants, getOrders } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,20 +23,19 @@ export async function POST(req: NextRequest) {
     const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
     const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-    // Fetch all participants & orders in memory to minimize Firestore operations
-    const [participantsSnap, ordersSnap] = await Promise.all([
-      getDocs(collection(db, 'participants')),
-      getDocs(collection(db, 'orders')),
+    // Fetch participants & orders using cached resilient DB functions
+    const [participants, orders] = await Promise.all([
+      getParticipants(),
+      getOrders(),
     ]);
 
     const ordersMap = new Map<string, Order>();
-    ordersSnap.docs.forEach(d => {
-      ordersMap.set(d.id, d.data() as Order);
+    orders.forEach(o => {
+      ordersMap.set(o.id, o);
     });
 
     const pendingParticipants: Participant[] = [];
-    participantsSnap.docs.forEach(d => {
-      const p = d.data() as Participant;
+    participants.forEach(p => {
       if (p.status === 'pending') {
         pendingParticipants.push(p);
       }

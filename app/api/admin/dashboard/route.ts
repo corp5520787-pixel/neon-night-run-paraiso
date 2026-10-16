@@ -1,22 +1,15 @@
 import { NextResponse } from 'next/server';
-import { getEventConfig, getAmbassadorCodes } from '@/lib/db';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getEventConfig, getAmbassadorCodes, getParticipants, getOrders } from '@/lib/db';
 import { Participant, Order, DashboardStats } from '@/lib/types';
 
 export async function GET() {
   try {
-    const config = await getEventConfig();
-    const ambassadors = await getAmbassadorCodes();
-
-    // Fetch participants and orders once each in parallel
-    const [participantsSnap, ordersSnap] = await Promise.all([
-      getDocs(collection(db, 'participants')),
-      getDocs(collection(db, 'orders')),
+    const [config, ambassadors, participants, orders] = await Promise.all([
+      getEventConfig(),
+      getAmbassadorCodes(),
+      getParticipants(),
+      getOrders(),
     ]);
-
-    const participants = participantsSnap.docs.map(d => d.data() as Participant);
-    const orders = ordersSnap.docs.map(d => d.data() as Order);
 
     const confirmed = participants.filter(p => p.status === 'confirmed');
     const approvedOrders = orders.filter(o => o.paymentStatus === 'approved');
@@ -57,8 +50,13 @@ export async function GET() {
       success: true,
       data: stats,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching admin dashboard:', error);
-    return NextResponse.json({ success: false, error: 'Error al consultar métricas del dashboard' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: error?.message || 'Error al consultar métricas del dashboard',
+      code: error?.code,
+      details: String(error)
+    }, { status: 500 });
   }
 }

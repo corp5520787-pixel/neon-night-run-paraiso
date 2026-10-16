@@ -34,7 +34,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { EventConfig, PricingStage } from '@/lib/types';
-import { defaultEventConfig, defaultPricingStages } from '@/lib/db';
+import { defaultEventConfig, defaultPricingStages } from '@/lib/db-defaults';
 import RegistrationClosingCountdown from '@/components/RegistrationClosingCountdown';
 import { isRegistrationClosed } from '@/lib/registration-deadline';
 

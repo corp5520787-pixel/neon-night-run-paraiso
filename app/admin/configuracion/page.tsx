@@ -15,7 +15,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { EventConfig } from '@/lib/types';
-import { defaultEventConfig } from '@/lib/db';
+import { defaultEventConfig } from '@/lib/db-defaults';
 import { isRegistrationClosed } from '@/lib/registration-deadline';
 
 export default function AdminConfiguracionPage() {

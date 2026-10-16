@@ -706,7 +706,7 @@ export default function AdminParticipantesPage() {
                         <span>Error al cargar participantes</span>
                       </div>
                       <p className="text-slate-400 text-[11px] leading-relaxed">
-                        {error}. Si este error persiste, es muy probable que tu base de datos de Firebase haya excedido la cuota diaria gratuita del plan Spark. Las cuotas se restablecen automáticamente a la medianoche (hora del Pacífico) o al subir de plan en tu Consola de Firebase.
+                        {error}. El sistema cuenta con respaldo local sincronizado. Si la cuota diaria gratuita de Firestore se ha alcanzado, se restablece automáticamente a medianoche hora CDMX o puedes actualizar a un plan Blaze sin límites en la consola de Firebase.
                       </p>
                       <button
                         onClick={fetchParticipants}

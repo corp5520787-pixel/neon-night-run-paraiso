@@ -1,27 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
+import { getParticipants, getOrders, updateParticipant } from '@/lib/db';
+import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Participant, Order } from '@/lib/types';
 import { sendCancellationEmail } from '@/lib/email';
-import { ensureSeeded } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureSeeded();
     const now = new Date();
     const nowMs = now.getTime();
     const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
-    const [participantsSnap, ordersSnap] = await Promise.all([
-      getDocs(collection(db, 'participants')),
-      getDocs(collection(db, 'orders')),
+    const [participants, orders] = await Promise.all([
+      getParticipants(),
+      getOrders(),
     ]);
 
     const ordersMap = new Map<string, Order>();
-    ordersSnap.docs.forEach(d => {
-      ordersMap.set(d.id, d.data() as Order);
+    orders.forEach(o => {
+      ordersMap.set(o.id, o);
     });
 
     const overduePending: Array<{
@@ -34,8 +33,7 @@ export async function GET(req: NextRequest) {
     const confirmed: Participant[] = [];
     const pendingWithinFiveDays: Participant[] = [];
 
-    participantsSnap.docs.forEach(d => {
-      const p = d.data() as Participant;
+    participants.forEach(p => {
       if (p.status === 'cancelled') {
         alreadyCancelled.push(p);
       } else if (p.status === 'confirmed') {
@@ -62,7 +60,7 @@ export async function GET(req: NextRequest) {
       success: true,
       currentServerTime: now.toISOString(),
       summary: {
-        totalInDb: participantsSnap.size,
+        totalInDb: participants.length,
         confirmed: confirmed.length,
         alreadyCancelledNoPagados: alreadyCancelled.length,
         overduePendingCount: overduePending.length,
@@ -118,19 +116,18 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    await ensureSeeded();
     const now = new Date();
     const nowMs = now.getTime();
     const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
-    const [participantsSnap, ordersSnap] = await Promise.all([
-      getDocs(collection(db, 'participants')),
-      getDocs(collection(db, 'orders')),
+    const [participants, orders] = await Promise.all([
+      getParticipants(),
+      getOrders(),
     ]);
 
     const ordersMap = new Map<string, Order>();
-    ordersSnap.docs.forEach(d => {
-      ordersMap.set(d.id, d.data() as Order);
+    orders.forEach(o => {
+      ordersMap.set(o.id, o);
     });
 
     const movedParticipants: Array<{
@@ -140,8 +137,7 @@ export async function POST(req: NextRequest) {
       email: string;
     }> = [];
 
-    for (const d of participantsSnap.docs) {
-      const p = d.data() as Participant;
+    for (const p of participants) {
       if (p.status === 'pending') {
         const createdMs = p.createdAt ? new Date(p.createdAt).getTime() : nowMs;
         const diffMs = nowMs - createdMs;

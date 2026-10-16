@@ -26,7 +26,7 @@ export default function AdminDatabaseUsagePage() {
   const [stats, setStats] = useState<DatabaseUsageStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchUsage = async () => {
@@ -60,7 +60,7 @@ export default function AdminDatabaseUsagePage() {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       fetchUsage();
-    }, 15000);
+    }, 180000); // Throttled to 3 minutes to preserve database quotas
     return () => clearInterval(interval);
   }, [autoRefresh]);
 

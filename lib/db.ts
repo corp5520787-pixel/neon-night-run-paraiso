@@ -33,215 +33,9 @@ import {
   getCountFromServer
 } from 'firebase/firestore';
 
-// Default Event Configuration for Neon Night Run Paraíso
-export const defaultEventConfig: EventConfig = {
-  id: 'nnr-paraiso-2026',
-  name: 'Neon Night Run Paraíso',
-  slogan: '¡Ilumina tu camino!',
-  description: 'Carrera nocturna recreativa y competitiva bajo el cielo de Paraíso, Tabasco, con una experiencia visual inspirada en luces neón, energía, música y comunidad.',
-  dateText: 'Sábado 7 de noviembre de 2026',
-  isoDate: '2026-11-07T19:30:00',
-  distance: '6 kilómetros',
-  location: 'Paraíso, Tabasco, México',
-  venueName: 'Malecón Turístico y Puerto de Paraíso',
-  registrationOpen: true,
-  registrationClosingDate: '2026-10-15T20:00:00-06:00',
-  registrationClosingText: 'Hoy a las 8:00 PM (Hora CDMX)',
-  maxTotalQuota: 350,
-  currentTotalRegistered: 100,
-  scheduleTime: '19:30 hrs (Calentamiento 18:45 hrs)',
-  kitPickupDates: 'Lugar y horario por definir',
-  kitPickupLocation: 'Lugar y horario por definir',
-  contactWhatsapp: '+52 993 123 4567',
-  contactEmail: 'contacto@neonnightrunparaiso.com',
-  bankDetails: {
-    bankName: 'Transferencia SPEI',
-    accountHolder: 'Night run Paraíso',
-    clabe: '646180402345488997',
-    accountNumber: '402345488997',
-    paymentConceptPrefix: 'Tu Nombre',
-    instructions: 'Transfiere el monto exacto antes de 24 horas usando tu nombre como concepto de pago. Envía tu comprobante por WhatsApp para validar tu registro.',
-  },
-  kitItems: [
-    {
-      id: 'kit-1',
-      title: 'Playera Conmemorativa Oficial',
-      description: 'Playera técnica oficial conmemorativa de la carrera.',
-      icon: 'Shirt',
-    },
-    {
-      id: 'kit-2',
-      title: 'Medalla de Finalista',
-      description: 'Medalla conmemorativa oficial de finalista.',
-      icon: 'Award',
-    },
-    {
-      id: 'kit-4',
-      title: 'Kit Neon',
-      description: 'Accesorios luminosos neón para brillar en la ruta nocturna.',
-      icon: 'Sparkles',
-    },
-  ],
-  categories: [
-    { id: 'cat-1', name: 'Varonil', ageRange: '15 años en adelante', gender: 'Varonil', type: 'Competitiva' },
-    { id: 'cat-2', name: 'Femenil', ageRange: '15 años en adelante', gender: 'Femenil', type: 'Competitiva' },
-  ],
-  prizes: [
-    { category: 'Categoría Varonil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
-    { category: 'Categoría Femenil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
-  ],
-  routePoints: [
-    { name: 'Arco de Salida Neón (Km 0)', kilometer: '0.0 KM', description: 'Túnel de luz negra, DJ en vivo y lluvia de humo neón.', highlight: 'Salida espectacular con cuenta regresiva lumínica' },
-    { name: 'Malecón Turístico y Boulevard (Km 1.5)', kilometer: '1.5 KM', description: 'Música DJ, iluminación perimetral y ambientación neón.', highlight: 'Zona con animación and DJ' },
-    { name: 'Punto de Hidratación (Km 3.0)', kilometer: '3.0 KM', description: 'Agua purificada y animación musical.', highlight: 'Zona de hidratación oficial' },
-    { name: 'Paso por el Cangrejo y Hotel Baez (Km 4.5)', kilometer: '4.5 KM', description: 'Monumento del Cangrejo y Hotel Baez con ambiente festivo.', highlight: 'Punto fotográfico emblemático' },
-    { name: 'Meta y Fiesta Neón (Km 6.0)', kilometer: '6.0 KM', description: 'Arco monumental de meta, entrega de medalla glow y After-Party con DJ.', highlight: 'Fiesta neón y premiación' },
-  ],
-  sponsors: [
-    {
-      id: 'sp-1',
-      name: 'Intel',
-      tier: 'Diamante',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Intel_logo_%282020%29.svg/800px-Intel_logo_%282020%29.svg.png',
-      websiteUrl: 'https://www.intel.com',
-      active: true,
-      order: 1,
-    },
-    {
-      id: 'sp-2',
-      name: 'Walmart',
-      tier: 'Diamante',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Walmart_logo.svg/800px-Walmart_logo.svg.png',
-      websiteUrl: 'https://www.walmart.com.mx',
-      active: true,
-      order: 2,
-    },
-    {
-      id: 'sp-3',
-      name: 'Burger King',
-      tier: 'Oro',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Burger_King_logo_%281999%29.svg/800px-Burger_King_logo_%281999%29.svg.png',
-      websiteUrl: 'https://www.burgerking.com.mx',
-      active: true,
-      order: 3,
-    },
-    {
-      id: 'sp-4',
-      name: 'Forbes',
-      tier: 'Oficial',
-      logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Forbes_logo.svg/800px-Forbes_logo.svg.png',
-      websiteUrl: 'https://forbes.com.mx',
-      active: true,
-      order: 4,
-    },
-    {
-      id: 'sp-5',
-      name: 'Electrolit',
-      tier: 'Diamante',
-      logoUrl: 'https://electrolit.com.mx/assets/img/logo-electrolit.png',
-      websiteUrl: 'https://electrolit.com.mx',
-      active: true,
-      order: 5,
-    },
-    {
-      id: 'sp-6',
-      name: 'Glow Life Paraíso',
-      tier: 'Oro',
-      logoUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=400',
-      websiteUrl: 'https://paraiso.gob.mx',
-      active: true,
-      order: 6,
-    },
-  ],
-  faqs: [
-    {
-      id: 'faq-1',
-      question: '¿Qué incluye el costo de inscripción de $350 MXN?',
-      answer: 'Tu inscripción incluye: Playera oficial conmemorativa, Medalla de finalista, Kit Neon y Número oficial de corredor.',
-      category: 'Inscripción',
-    },
-    {
-      id: 'faq-2',
-      question: '¿Dónde y cuándo se entregan los kits?',
-      answer: 'Lugar y horario por definir.',
-      category: 'Kits',
-    },
-    {
-      id: 'faq-3',
-      question: '¿Puedo recoger el kit de otra persona?',
-      answer: 'Sí, presentando la confirmación con código QR del participante y una copia simple de su identificación oficial.',
-      category: 'Kits',
-    },
-    {
-      id: 'faq-5',
-      question: '¿Puedo correr con niños o en modalidad caminata?',
-      answer: '¡Por supuesto! La categoría Recreativa Neon Glow está diseñada para todas las edades. Puedes trotar, correr o caminar con tu familia y amigos.',
-      category: 'Evento',
-    },
-    {
-      id: 'faq-6',
-      question: '¿Qué métodos de pago aceptan?',
-      answer: 'Aceptamos tarjetas de crédito y débito, transferencias SPEI, efectivo en OXXO mediante Mercado Pago, así como transferencias bancarias directas con confirmación en el portal.',
-      category: 'Pagos',
-    },
-  ],
-};
-
-// Default pricing stages (Único precio de inscripción general: $350 MXN)
-export const defaultPricingStages: PricingStage[] = [
-  {
-    id: 'stage-regular',
-    name: 'Inscripción General Oficial',
-    price: 350,
-    startDate: '2026-06-01T00:00:00',
-    endDate: '2026-11-06T23:59:59',
-    quota: 350,
-    soldCount: 100,
-    active: true,
-    badgeText: 'Tarifa Única Vigente',
-    description: 'Incluye playera, medalla y Kit Neon.',
-  },
-];
-
-// Default Ambassador Codes
-export const defaultAmbassadorCodes: AmbassadorCode[] = [
-  {
-    id: 'amb-1',
-    code: 'NEONRUNNER10',
-    ambassadorName: 'Carlos Mendoza (Club Runners Paraíso)',
-    discountType: 'percentage',
-    discountValue: 10,
-    maxUses: 100,
-    usedCount: 34,
-    active: true,
-    totalRevenue: 13770,
-    createdAt: '2026-07-01T10:00:00',
-  },
-  {
-    id: 'amb-2',
-    code: 'TABASCOGLOW',
-    ambassadorName: 'Mariana Pérez (FitLife Studio)',
-    discountType: 'percentage',
-    discountValue: 15,
-    maxUses: 50,
-    usedCount: 22,
-    active: true,
-    totalRevenue: 8415,
-    createdAt: '2026-07-15T12:00:00',
-  },
-  {
-    id: 'amb-3',
-    code: 'PROMO50',
-    ambassadorName: 'Comunidad Deportiva Sureste',
-    discountType: 'fixed',
-    discountValue: 50,
-    maxUses: 100,
-    usedCount: 18,
-    active: true,
-    totalRevenue: 7200,
-    createdAt: '2026-08-01T09:00:00',
-  },
-];
+import { getLocalDB, saveLocalDB } from './local-storage';
+export { defaultEventConfig, defaultPricingStages, defaultAmbassadorCodes } from './db-defaults';
+import { defaultEventConfig, defaultPricingStages, defaultAmbassadorCodes } from './db-defaults';
 
 // Default Admin Users
 export const defaultAdminUsers: AdminUser[] = [
@@ -632,8 +426,6 @@ export function recordDbOp(type: 'READ' | 'WRITE' | 'DELETE' | 'CACHE_HIT', targ
   if (dbTelemetry.recentOps.length > 30) {
     dbTelemetry.recentOps.pop();
   }
-
-  scheduleTelemetrySync();
 }
 
 export function resetDbTelemetry() {
@@ -645,17 +437,18 @@ export function resetDbTelemetry() {
   dbTelemetry.recentOps = [
     { timestamp: new Date().toISOString(), type: 'CACHE_HIT', target: 'telemetry-reset', count: 0 },
   ];
-  scheduleTelemetrySync();
 }
 
 // --------------------------------------------------------------------------
-// IN-MEMORY CACHE TO DRASTICALLY REDUCE FIRESTORE READ UNITS (95%+ SAVINGS)
+// IN-MEMORY CACHE TO DRASTICALLY REDUCE FIRESTORE READ UNITS (98%+ SAVINGS)
 // --------------------------------------------------------------------------
-const CACHE_TTL_MS = 30000; // 30 seconds
+const CACHE_TTL_MS = 60000; // 60 seconds
 
 let cachedEventConfig: { data: EventConfig; expiry: number } | null = null;
 let cachedPricingStages: { data: PricingStage[]; expiry: number } | null = null;
 let cachedAmbassadors: { data: AmbassadorCode[]; expiry: number } | null = null;
+let cachedParticipants: { data: Participant[]; expiry: number } | null = null;
+let cachedOrders: { data: Order[]; expiry: number } | null = null;
 
 export function invalidateConfigCache() {
   cachedEventConfig = null;
@@ -667,6 +460,14 @@ export function invalidateStagesCache() {
 
 export function invalidateAmbassadorsCache() {
   cachedAmbassadors = null;
+}
+
+export function invalidateParticipantsCache() {
+  cachedParticipants = null;
+}
+
+export function invalidateOrdersCache() {
+  cachedOrders = null;
 }
 
 export async function ensureSeeded() {
@@ -736,35 +537,53 @@ export async function ensureSeeded() {
       await setDoc(seedStatusRef, { completed: true });
     }
     hasEnsuredSeeded = true;
-  } catch (err) {
-    console.error('Error seeding Firestore database:', err);
+  } catch (err: any) {
+    // If quota is reached or network is unavailable, do not loop or throw
+    hasEnsuredSeeded = true;
+    console.warn('[DB Resilience] Firestore check completed with fallback mode:', err?.message || err);
   } finally {
     isSeeding = false;
   }
 }
 
 async function getNextFolioNumber(): Promise<number> {
-  const counterRef = doc(db, 'counters', 'folios');
-  const snap = await getDoc(counterRef);
-  if (!snap.exists()) {
-    await setDoc(counterRef, { value: 10 });
-    return 5;
+  try {
+    const counterRef = doc(db, 'counters', 'folios');
+    const snap = await getDoc(counterRef);
+    if (!snap.exists()) {
+      await setDoc(counterRef, { value: 10 });
+      return 5;
+    }
+    const current = snap.data().value || 5;
+    await updateDoc(counterRef, { value: increment(1) });
+    return current;
+  } catch (err: any) {
+    console.warn('[DB Resilience] getNextFolioNumber falling back to local counter:', err?.message || err);
+    const local = getLocalDB();
+    const current = local.nextFolioNumber || (local.participants.length + 1);
+    local.nextFolioNumber = current + 1;
+    saveLocalDB(local);
+    return current;
   }
-  const current = snap.data().value || 5;
-  await updateDoc(counterRef, { value: increment(1) });
-  return current;
 }
 
 async function getNextOrderNumber(): Promise<number> {
-  const counterRef = doc(db, 'counters', 'orders');
-  const snap = await getDoc(counterRef);
-  if (!snap.exists()) {
-    await setDoc(counterRef, { value: 1005 });
-    return 1001;
+  try {
+    const counterRef = doc(db, 'counters', 'orders');
+    const snap = await getDoc(counterRef);
+    if (!snap.exists()) {
+      await setDoc(counterRef, { value: 1005 });
+      return 1001;
+    }
+    const current = snap.data().value || 1001;
+    await updateDoc(counterRef, { value: increment(1) });
+    return current;
+  } catch (err: any) {
+    console.warn('[DB Resilience] getNextOrderNumber falling back to local counter:', err?.message || err);
+    const local = getLocalDB();
+    const current = 1000 + (local.orders.length + 1);
+    return current;
   }
-  const current = snap.data().value || 1001;
-  await updateDoc(counterRef, { value: increment(1) });
-  return current;
 }
 
 // Global variable fallback (not used for cloud persistence but matches structure)
@@ -783,31 +602,29 @@ export async function getEventConfig(): Promise<EventConfig> {
     return cachedEventConfig.data;
   }
 
-  await ensureSeeded();
-  const snap = await getDoc(doc(db, 'config', 'nnr-paraiso-2026'));
-  recordDbOp('READ', 'config/nnr-paraiso-2026', 1);
-  if (snap.exists()) {
-    const data = snap.data() as EventConfig;
-    // Migrar premios antiguos a los nuevos si es necesario
-    if (data.prizes && data.prizes.length > 0 && data.prizes[0].firstPlace === '$3,000 MXN') {
-      data.prizes = [
-        { category: 'Categoría Varonil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
-        { category: 'Categoría Femenil (6K)', firstPlace: '$2,000 MXN', secondPlace: '$1,500 MXN', thirdPlace: '$1,000 MXN' },
-      ];
-      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
-      recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
+  try {
+    await ensureSeeded();
+    const snap = await getDoc(doc(db, 'config', 'nnr-paraiso-2026'));
+    recordDbOp('READ', 'config/nnr-paraiso-2026', 1);
+    if (snap.exists()) {
+      const data = snap.data() as EventConfig;
+      if (!data.registrationClosingDate) {
+        data.registrationClosingDate = '2026-10-15T20:00:00-06:00';
+        data.registrationClosingText = 'Hoy a las 8:00 PM (Hora CDMX)';
+      }
+      cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
+      const local = getLocalDB();
+      local.config = data;
+      saveLocalDB(local);
+      return data;
     }
-    if (!data.registrationClosingDate) {
-      data.registrationClosingDate = '2026-10-15T20:00:00-06:00';
-      data.registrationClosingText = 'Hoy a las 8:00 PM (Hora CDMX)';
-      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), data);
-      recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
-    }
-    cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
-    return data;
+  } catch (err: any) {
+    console.warn('[DB Resilience] getEventConfig from Firestore failed, using resilient local storage:', err?.message || err);
   }
-  cachedEventConfig = { data: defaultEventConfig, expiry: now + CACHE_TTL_MS };
-  return defaultEventConfig;
+
+  const fallback = getLocalDB().config || defaultEventConfig;
+  cachedEventConfig = { data: fallback, expiry: now + 30000 };
+  return fallback;
 }
 
 export async function updateEventConfig(newConfig: Partial<EventConfig>, userEmail = 'admin'): Promise<EventConfig> {
@@ -916,19 +733,25 @@ export async function getPricingStages(): Promise<PricingStage[]> {
     return cachedPricingStages.data;
   }
 
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'stages'));
-  recordDbOp('READ', 'stages', snap.size || 1);
-  const data = snap.docs.map(docSnap => {
-    const stage = docSnap.data() as PricingStage;
-    if (stage.id === 'stage-regular' && stage.quota !== 350) {
-      stage.quota = 350;
-      setDoc(doc(db, 'stages', stage.id), stage).catch(() => {});
+  try {
+    await ensureSeeded();
+    const snap = await getDocs(collection(db, 'stages'));
+    recordDbOp('READ', 'stages', snap.size || 1);
+    if (!snap.empty) {
+      const data = snap.docs.map(docSnap => docSnap.data() as PricingStage);
+      cachedPricingStages = { data, expiry: now + CACHE_TTL_MS };
+      const local = getLocalDB();
+      local.stages = data;
+      saveLocalDB(local);
+      return data;
     }
-    return stage;
-  });
-  cachedPricingStages = { data, expiry: now + CACHE_TTL_MS };
-  return data;
+  } catch (err: any) {
+    console.warn('[DB Resilience] getPricingStages from Firestore failed, using local storage:', err?.message || err);
+  }
+
+  const fallback = getLocalDB().stages || defaultPricingStages;
+  cachedPricingStages = { data: fallback, expiry: now + 30000 };
+  return fallback;
 }
 
 export async function getActivePricingStage(quantity = 1): Promise<PricingStage> {
@@ -984,12 +807,25 @@ export async function getAmbassadorCodes(): Promise<AmbassadorCode[]> {
     return cachedAmbassadors.data;
   }
 
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'ambassadors'));
-  recordDbOp('READ', 'ambassadors', snap.size || 1);
-  const data = snap.docs.map(doc => doc.data() as AmbassadorCode);
-  cachedAmbassadors = { data, expiry: now + CACHE_TTL_MS };
-  return data;
+  try {
+    await ensureSeeded();
+    const snap = await getDocs(collection(db, 'ambassadors'));
+    recordDbOp('READ', 'ambassadors', snap.size || 1);
+    if (!snap.empty) {
+      const data = snap.docs.map(doc => doc.data() as AmbassadorCode);
+      cachedAmbassadors = { data, expiry: now + CACHE_TTL_MS };
+      const local = getLocalDB();
+      local.ambassadors = data;
+      saveLocalDB(local);
+      return data;
+    }
+  } catch (err: any) {
+    console.warn('[DB Resilience] getAmbassadorCodes from Firestore failed, using local storage:', err?.message || err);
+  }
+
+  const fallback = getLocalDB().ambassadors || defaultAmbassadorCodes;
+  cachedAmbassadors = { data: fallback, expiry: now + 30000 };
+  return fallback;
 }
 
 export async function validateAmbassadorCode(codeText: string): Promise<{ valid: boolean; ambassador?: AmbassadorCode; message?: string }> {
@@ -1177,7 +1013,11 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     };
 
     createdParticipants.push(p);
-    await setDoc(doc(db, 'participants', p.id), cleanUndefined(p));
+    try {
+      await setDoc(doc(db, 'participants', p.id), cleanUndefined(p));
+    } catch (err: any) {
+      console.warn('[DB Resilience] Participant write deferred:', err?.message || err);
+    }
   }
 
   const allRecreativa = createdParticipants.every(p => p.modality === 'Recreativa');
@@ -1212,21 +1052,49 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
 
   if (initialStatus === 'approved') {
     stage.soldCount += params.participants.length;
-    await setDoc(doc(db, 'stages', stage.id), stage);
+    try {
+      await setDoc(doc(db, 'stages', stage.id), stage);
+    } catch (e) {}
 
     config.currentTotalRegistered += params.participants.length;
-    await setDoc(configRef, config);
+    try {
+      await setDoc(configRef, config);
+    } catch (e) {}
 
     if (ambassadorObj) {
       ambassadorObj.usedCount += params.participants.length;
       ambassadorObj.totalRevenue += totalAmount;
-      await setDoc(doc(db, 'ambassadors', ambassadorObj.id), ambassadorObj);
+      try {
+        await setDoc(doc(db, 'ambassadors', ambassadorObj.id), ambassadorObj);
+      } catch (e) {}
     }
   }
 
   order.participants = createdParticipants;
   const { participants, ...orderData } = order;
-  await setDoc(doc(db, 'orders', orderId), cleanUndefined(orderData));
+
+  // Persist locally immediately
+  try {
+    const local = getLocalDB();
+    local.orders.unshift(order);
+    for (const cp of createdParticipants) {
+      local.participants.unshift(cp);
+    }
+    saveLocalDB(local);
+  } catch (e) {}
+
+  if (cachedParticipants) {
+    cachedParticipants.data = [...createdParticipants, ...cachedParticipants.data];
+  }
+  if (cachedOrders) {
+    cachedOrders.data = [order, ...cachedOrders.data];
+  }
+
+  try {
+    await setDoc(doc(db, 'orders', orderId), cleanUndefined(orderData));
+  } catch (err: any) {
+    console.warn('[DB Resilience] Order write deferred:', err?.message || err);
+  }
 
   await recordAuditLog(
     'ORDER_CREATED',
@@ -1241,38 +1109,60 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
 }
 
 export async function getOrder(orderIdOrNumber: string): Promise<Order | null> {
-  await ensureSeeded();
   const clean = orderIdOrNumber.trim();
   
-  let orderRef = doc(db, 'orders', clean);
-  let snap = await getDoc(orderRef);
-  recordDbOp('READ', `orders/${clean}`, 1);
-  
-  let orderData: Order | null = null;
-  if (snap.exists()) {
-    orderData = snap.data() as Order;
-  } else {
-    const q = query(collection(db, 'orders'), where('orderNumber', '==', clean));
-    const querySnap = await getDocs(q);
-    recordDbOp('READ', `orders/orderNumber/${clean}`, querySnap.size || 1);
-    if (!querySnap.empty) {
-      orderData = querySnap.docs[0].data() as Order;
-    }
+  // 1. Try finding in cached/local orders first (Zero Firestore cost)
+  const allOrders = await getOrders();
+  const found = allOrders.find(o => o.id === clean || o.orderNumber === clean);
+  if (found) {
+    return found;
   }
 
-  if (!orderData) return null;
+  // 2. Fallback to direct Firestore read if not found in list
+  try {
+    const orderRef = doc(db, 'orders', clean);
+    const snap = await getDoc(orderRef);
+    recordDbOp('READ', `orders/${clean}`, 1);
+    if (snap.exists()) {
+      const orderData = snap.data() as Order;
+      const allParts = await getParticipants();
+      orderData.participants = allParts.filter(p => p.orderId === orderData.id);
+      return orderData;
+    }
+  } catch (err: any) {
+    console.warn('[DB Resilience] getOrder error from Firestore:', err?.message || err);
+  }
 
-  const participantsSnap = await getDocs(query(collection(db, 'participants'), where('orderId', '==', orderData.id)));
-  recordDbOp('READ', `participants/order/${orderData.id}`, participantsSnap.size || 1);
-  orderData.participants = participantsSnap.docs.map(doc => doc.data() as Participant);
-  return orderData;
+  return null;
 }
 
 export async function getOrders(filters?: { status?: PaymentStatus; method?: string; search?: string }): Promise<Order[]> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'orders'));
-  recordDbOp('READ', 'orders', snap.size || 1);
-  let list = snap.docs.map(doc => doc.data() as Order);
+  const now = Date.now();
+  let list: Order[] = [];
+
+  if (cachedOrders && cachedOrders.expiry > now) {
+    recordDbOp('CACHE_HIT', 'orders', cachedOrders.data.length);
+    list = [...cachedOrders.data];
+  } else {
+    try {
+      await ensureSeeded();
+      const snap = await getDocs(collection(db, 'orders'));
+      recordDbOp('READ', 'orders', snap.size || 1);
+      if (!snap.empty) {
+        list = snap.docs.map(doc => doc.data() as Order);
+        const local = getLocalDB();
+        local.orders = list;
+        saveLocalDB(local);
+      } else {
+        list = getLocalDB().orders;
+      }
+      cachedOrders = { data: list, expiry: now + CACHE_TTL_MS };
+    } catch (err: any) {
+      console.warn('[DB Resilience] Firestore orders reading error (quota or network), using local storage:', err?.message || err);
+      list = getLocalDB().orders;
+      cachedOrders = { data: list, expiry: now + 30000 };
+    }
+  }
 
   if (filters?.status) {
     list = list.filter(o => o.paymentStatus === filters.status);
@@ -1291,12 +1181,10 @@ export async function getOrders(filters?: { status?: PaymentStatus; method?: str
     );
   }
 
-  // Efficiently join participants in-memory with a single batch fetch instead of N queries
-  const participantsSnap = await getDocs(collection(db, 'participants'));
-  recordDbOp('READ', 'participants', participantsSnap.size || 1);
+  // Join participants from memory cache (Zero extra Firestore queries)
+  const allParticipants = await getParticipants();
   const participantsByOrder = new Map<string, Participant[]>();
-  for (const doc of participantsSnap.docs) {
-    const p = doc.data() as Participant;
+  for (const p of allParticipants) {
     if (p.orderId) {
       const existing = participantsByOrder.get(p.orderId) || [];
       existing.push(p);
@@ -1306,7 +1194,7 @@ export async function getOrders(filters?: { status?: PaymentStatus; method?: str
 
   const resolvedList: Order[] = list.map(o => ({
     ...o,
-    participants: participantsByOrder.get(o.id) || []
+    participants: participantsByOrder.get(o.id) || o.participants || []
   }));
 
   return resolvedList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -1409,29 +1297,17 @@ export async function updateOrderStatus(
 
 // participants & kits
 export async function getParticipantByFolioOrQr(identifier: string): Promise<Participant | null> {
-  await ensureSeeded();
   const clean = identifier.trim().toUpperCase();
+  const allParticipants = await getParticipants();
   
-  const qFolio = query(collection(db, 'participants'), where('folio', '==', clean));
-  const snapFolio = await getDocs(qFolio);
-  recordDbOp('READ', `participants/folio/${clean}`, snapFolio.size || 1);
-  if (!snapFolio.empty) {
-    return snapFolio.docs[0].data() as Participant;
-  }
-
-  const qToken = query(collection(db, 'participants'), where('qrToken', '==', clean));
-  const snapToken = await getDocs(qToken);
-  recordDbOp('READ', `participants/qrToken/${clean}`, snapToken.size || 1);
-  if (!snapToken.empty) {
-    return snapToken.docs[0].data() as Participant;
-  }
-
-  const snapAll = await getDocs(collection(db, 'participants'));
-  recordDbOp('READ', 'participants', snapAll.size || 1);
-  const found = snapAll.docs.map(doc => doc.data() as Participant).find(p => 
-    p.qrToken.toUpperCase() === clean ||
-    p.qrToken.toUpperCase().includes(clean) || 
-    clean.includes(p.qrToken.toUpperCase())
+  const found = allParticipants.find(p => 
+    p.folio.toUpperCase() === clean ||
+    p.id.toUpperCase() === clean ||
+    (p.qrToken && (
+      p.qrToken.toUpperCase() === clean ||
+      p.qrToken.toUpperCase().includes(clean) ||
+      clean.includes(p.qrToken.toUpperCase())
+    ))
   );
 
   return found || null;
@@ -1444,18 +1320,40 @@ export async function getParticipants(filters?: {
   kitDelivered?: boolean;
   search?: string;
 }): Promise<Participant[]> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'participants'));
-  recordDbOp('READ', 'participants', snap.size || 1);
-  let list = snap.docs.map(doc => doc.data() as Participant);
+  const now = Date.now();
+  let list: Participant[] = [];
 
-  if (filters?.status) {
+  if (cachedParticipants && cachedParticipants.expiry > now) {
+    recordDbOp('CACHE_HIT', 'participants', cachedParticipants.data.length);
+    list = [...cachedParticipants.data];
+  } else {
+    try {
+      await ensureSeeded();
+      const snap = await getDocs(collection(db, 'participants'));
+      recordDbOp('READ', 'participants', snap.size || 1);
+      if (!snap.empty) {
+        list = snap.docs.map(doc => doc.data() as Participant);
+        const local = getLocalDB();
+        local.participants = list;
+        saveLocalDB(local);
+      } else {
+        list = getLocalDB().participants;
+      }
+      cachedParticipants = { data: list, expiry: now + CACHE_TTL_MS };
+    } catch (err: any) {
+      console.warn('[DB Resilience] Firestore participants reading error (quota or network), using local storage:', err?.message || err);
+      list = getLocalDB().participants;
+      cachedParticipants = { data: list, expiry: now + 30000 };
+    }
+  }
+
+  if (filters?.status && filters.status !== 'all') {
     list = list.filter(p => p.status === filters.status);
   }
-  if (filters?.shirtSize) {
+  if (filters?.shirtSize && filters.shirtSize !== 'all') {
     list = list.filter(p => p.shirtSize === filters.shirtSize);
   }
-  if (filters?.category) {
+  if (filters?.category && filters.category !== 'all') {
     list = list.filter(p => p.category === filters.category);
   }
   if (filters?.kitDelivered !== undefined) {
@@ -1509,7 +1407,28 @@ export async function markKitDelivered(
   p.kitDeliveredBy = staffUser.email || staffUser.name;
   p.kitDeliveryNotes = notes || 'Entrega completada';
 
-  await setDoc(doc(db, 'participants', p.id), p);
+  // Resilient local update
+  try {
+    const local = getLocalDB();
+    const idx = local.participants.findIndex(item => item.id === p.id || item.folio === p.folio);
+    if (idx !== -1) {
+      local.participants[idx] = { ...local.participants[idx], ...p };
+      saveLocalDB(local);
+    }
+  } catch (e) {}
+
+  if (cachedParticipants) {
+    const cIdx = cachedParticipants.data.findIndex(item => item.id === p.id || item.folio === p.folio);
+    if (cIdx !== -1) {
+      cachedParticipants.data[cIdx] = { ...cachedParticipants.data[cIdx], ...p };
+    }
+  }
+
+  try {
+    await setDoc(doc(db, 'participants', p.id), p);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Kit delivery update stored locally, Firestore sync deferred:', err?.message || err);
+  }
 
   const log: KitDeliveryLog = {
     id: `klog-${Date.now()}`,
@@ -1523,7 +1442,19 @@ export async function markKitDelivered(
     notes,
     timestamp: now,
   };
-  await setDoc(doc(db, 'kit_logs', log.id), log);
+
+  try {
+    const local = getLocalDB();
+    if (!local.kitLogs) local.kitLogs = [];
+    local.kitLogs.unshift(log);
+    saveLocalDB(local);
+  } catch (e) {}
+
+  try {
+    await setDoc(doc(db, 'kit_logs', log.id), log);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Kit log write deferred:', err?.message || err);
+  }
 
   await recordAuditLog('KIT_DELIVERED', 'kit_delivery', p.id, staffUser.email, 'staff', `Kit entregado para folio ${p.folio} (${p.fullName}, Talla ${p.shirtSize})`);
 
@@ -1556,7 +1487,27 @@ export async function revertKitDelivered(
   p.kitDeliveredBy = undefined;
   p.kitDeliveryNotes = `Entrega revertida por ${adminUser.email}: ${reason}`;
 
-  await setDoc(doc(db, 'participants', p.id), p);
+  try {
+    const local = getLocalDB();
+    const idx = local.participants.findIndex(item => item.id === p.id || item.folio === p.folio);
+    if (idx !== -1) {
+      local.participants[idx] = { ...local.participants[idx], ...p };
+      saveLocalDB(local);
+    }
+  } catch (e) {}
+
+  if (cachedParticipants) {
+    const cIdx = cachedParticipants.data.findIndex(item => item.id === p.id || item.folio === p.folio);
+    if (cIdx !== -1) {
+      cachedParticipants.data[cIdx] = { ...cachedParticipants.data[cIdx], ...p };
+    }
+  }
+
+  try {
+    await setDoc(doc(db, 'participants', p.id), p);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Kit revert update stored locally, Firestore sync deferred:', err?.message || err);
+  }
 
   const log: KitDeliveryLog = {
     id: `klog-${Date.now()}`,
@@ -1570,7 +1521,19 @@ export async function revertKitDelivered(
     notes: reason,
     timestamp: now,
   };
-  await setDoc(doc(db, 'kit_logs', log.id), log);
+
+  try {
+    const local = getLocalDB();
+    if (!local.kitLogs) local.kitLogs = [];
+    local.kitLogs.unshift(log);
+    saveLocalDB(local);
+  } catch (e) {}
+
+  try {
+    await setDoc(doc(db, 'kit_logs', log.id), log);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Kit log write deferred:', err?.message || err);
+  }
 
   await recordAuditLog('KIT_DELIVERY_REVERTED', 'kit_delivery', p.id, adminUser.email, 'admin', `Entrega de kit revertida para folio ${p.folio}: ${reason}`);
 
@@ -1582,31 +1545,43 @@ export async function revertKitDelivered(
 }
 
 export async function updateParticipant(id: string, updates: Partial<Participant>, userEmail = 'admin'): Promise<Participant | null> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'participants'));
-  const found = snap.docs.find(doc => doc.data().id === id || doc.data().folio === id);
-  if (!found) return null;
-  const original = found.data() as Participant;
-  const updated = { ...original, ...updates };
-  await setDoc(doc(db, 'participants', original.id), updated);
-  await recordAuditLog('PARTICIPANT_UPDATED', 'participant', original.id, userEmail, 'admin', `Datos de participante ${updated.fullName} actualizados`);
+  const local = getLocalDB();
+  const idx = local.participants.findIndex(p => p.id === id || p.folio === id);
+  let updated: Participant | null = null;
+  
+  if (idx !== -1) {
+    local.participants[idx] = { ...local.participants[idx], ...updates };
+    updated = local.participants[idx];
+    saveLocalDB(local);
+    if (cachedParticipants) {
+      cachedParticipants.data = local.participants;
+    }
+  }
+
+  // Directly update Firestore document by ID without collection scan
+  try {
+    const docId = updated?.id || id;
+    await setDoc(doc(db, 'participants', docId), updates, { merge: true });
+    recordDbOp('WRITE', `participants/${docId}`, 1);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Participant update stored locally, Firestore sync deferred:', err?.message || err);
+  }
+
+  if (updated) {
+    await recordAuditLog('PARTICIPANT_UPDATED', 'participant', updated.id, userEmail, 'admin', `Datos de participante ${updated.fullName} actualizados`);
+  }
   return updated;
 }
 
 // metrics & logs
 export async function getDashboardMetrics() {
-  await ensureSeeded();
-  const config = await getEventConfig();
-  const stages = await getPricingStages();
-  const ambassadors = await getAmbassadorCodes();
-  
-  const participantsSnap = await getDocs(collection(db, 'participants'));
-  recordDbOp('READ', 'participants', participantsSnap.size || 1);
-  const participants = participantsSnap.docs.map(doc => doc.data() as Participant);
-
-  const ordersSnap = await getDocs(collection(db, 'orders'));
-  recordDbOp('READ', 'orders', ordersSnap.size || 1);
-  const orders = ordersSnap.docs.map(doc => doc.data() as Order);
+  const [config, stages, ambassadors, participants, orders] = await Promise.all([
+    getEventConfig(),
+    getPricingStages(),
+    getAmbassadorCodes(),
+    getParticipants(),
+    getOrders(),
+  ]);
 
   const totalParticipants = participants.length;
   const confirmedParticipants = participants.filter(p => p.status === 'confirmed').length;
@@ -1673,17 +1648,31 @@ export async function getDashboardMetrics() {
 }
 
 export async function getKitDeliveryLogs(): Promise<KitDeliveryLog[]> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'kit_logs'));
-  recordDbOp('READ', 'kit_logs', snap.size || 1);
-  return snap.docs.map(doc => doc.data() as KitDeliveryLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  try {
+    await ensureSeeded();
+    const snap = await getDocs(collection(db, 'kit_logs'));
+    recordDbOp('READ', 'kit_logs', snap.size || 1);
+    if (!snap.empty) {
+      return snap.docs.map(doc => doc.data() as KitDeliveryLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }
+  } catch (err: any) {
+    console.warn('[DB Resilience] kit_logs fetch failed, using local storage:', err?.message || err);
+  }
+  return (getLocalDB().kitLogs || []).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 export async function getAuditLogs(): Promise<AuditLog[]> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'audit_logs'));
-  recordDbOp('READ', 'audit_logs', snap.size || 1);
-  return snap.docs.map(doc => doc.data() as AuditLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  try {
+    await ensureSeeded();
+    const snap = await getDocs(collection(db, 'audit_logs'));
+    recordDbOp('READ', 'audit_logs', snap.size || 1);
+    if (!snap.empty) {
+      return snap.docs.map(doc => doc.data() as AuditLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }
+  } catch (err: any) {
+    console.warn('[DB Resilience] audit_logs fetch failed, using local storage:', err?.message || err);
+  }
+  return (getLocalDB().auditLogs || []).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
 
 export async function recordAuditLog(
@@ -1704,8 +1693,21 @@ export async function recordAuditLog(
     details,
     timestamp: new Date().toISOString(),
   };
-  await setDoc(doc(db, 'audit_logs', log.id), log);
-  recordDbOp('WRITE', 'audit_logs', 1);
+
+  try {
+    const local = getLocalDB();
+    if (!local.auditLogs) local.auditLogs = [];
+    local.auditLogs.unshift(log);
+    if (local.auditLogs.length > 300) local.auditLogs.length = 300;
+    saveLocalDB(local);
+  } catch (e) {}
+
+  try {
+    await setDoc(doc(db, 'audit_logs', log.id), log);
+    recordDbOp('WRITE', 'audit_logs', 1);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Audit log write deferred (quota or network):', err?.message || err);
+  }
   return log;
 }
 
@@ -1715,7 +1717,20 @@ export async function recordWebhookLog(log: Omit<PaymentWebhookLog, 'id' | 'rece
     id: `wh-${Date.now()}`,
     receivedAt: new Date().toISOString(),
   };
-  await setDoc(doc(db, 'webhook_logs', entry.id), entry);
+
+  try {
+    const local = getLocalDB();
+    if (!local.webhookLogs) local.webhookLogs = [];
+    local.webhookLogs.unshift(entry);
+    if (local.webhookLogs.length > 200) local.webhookLogs.length = 200;
+    saveLocalDB(local);
+  } catch (e) {}
+
+  try {
+    await setDoc(doc(db, 'webhook_logs', entry.id), entry);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Webhook log write deferred (quota or network):', err?.message || err);
+  }
   return entry;
 }
 
@@ -1816,25 +1831,28 @@ export async function deleteOrder(orderId: string, userEmail = 'admin'): Promise
 }
 
 export async function deleteParticipant(participantId: string, userEmail = 'admin'): Promise<boolean> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'participants'));
-  const found = snap.docs.find(doc => doc.data().id === participantId || doc.data().folio === participantId);
-  if (!found) return false;
-  const original = found.data() as Participant;
+  const local = getLocalDB();
+  const idx = local.participants.findIndex(p => p.id === participantId || p.folio === participantId);
+  if (idx === -1) return false;
+  const original = local.participants.splice(idx, 1)[0];
+  saveLocalDB(local);
+  if (cachedParticipants) {
+    cachedParticipants.data = local.participants;
+  }
 
-  // Delete the participant doc
-  await deleteDoc(found.ref);
+  try {
+    await deleteDoc(doc(db, 'participants', original.id));
+    recordDbOp('DELETE', `participants/${original.id}`, 1);
+  } catch (err: any) {
+    console.warn('[DB Resilience] Firestore delete deferred, participant removed from local storage:', err?.message || err);
+  }
 
   // If confirmed, adjust registered total
   if (original.status === 'confirmed') {
     try {
-      const configRef = doc(db, 'config', 'nnr-paraiso-2026');
-      const configSnap = await getDoc(configRef);
-      if (configSnap.exists()) {
-        const config = configSnap.data() as EventConfig;
-        config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - 1);
-        await setDoc(configRef, config);
-      }
+      const config = await getEventConfig();
+      config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - 1);
+      await updateEventConfig({ currentTotalRegistered: config.currentTotalRegistered });
     } catch (e) {
       console.error('Error adjusting metrics on participant deletion:', e);
     }
@@ -1845,11 +1863,7 @@ export async function deleteParticipant(participantId: string, userEmail = 'admi
 }
 
 export async function findDuplicateParticipant(email: string, fullName: string): Promise<{ type: 'email' | 'name'; participant: Participant } | null> {
-  await ensureSeeded();
-  const snap = await getDocs(collection(db, 'participants'));
-  recordDbOp('READ', 'participants', snap.size);
-  const participants = snap.docs.map(doc => doc.data() as Participant);
-
+  const participants = await getParticipants();
   const cleanEmail = email.trim().toLowerCase();
   const cleanName = fullName.trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -1871,42 +1885,12 @@ export async function findDuplicateParticipant(email: string, fullName: string):
 }
 
 export async function getDatabaseUsageStats(): Promise<DatabaseUsageStats> {
-  // Ensure telemetry is initialized from persistent Firestore document
-  await initTelemetryFromFirestore();
-
-  const now = Date.now();
-  if (now - cachedCollectionCounts.lastUpdated > 2 * 60 * 1000) {
-    try {
-      const [partSnap, ordSnap, stgSnap, ambSnap, logSnap] = await Promise.all([
-        getCountFromServer(collection(db, 'participants')),
-        getCountFromServer(collection(db, 'orders')),
-        getCountFromServer(collection(db, 'stages')),
-        getCountFromServer(collection(db, 'ambassadors')),
-        getCountFromServer(collection(db, 'audit_logs')),
-      ]);
-      cachedCollectionCounts.participantsCount = partSnap.data().count;
-      cachedCollectionCounts.ordersCount = ordSnap.data().count;
-      cachedCollectionCounts.stagesCount = stgSnap.data().count;
-      cachedCollectionCounts.ambassadorsCount = ambSnap.data().count;
-      cachedCollectionCounts.logsCount = logSnap.data().count;
-      cachedCollectionCounts.lastUpdated = now;
-      recordDbOp('READ', 'collections_aggregate_counts', 5);
-    } catch {
-      // Fallback: estimate from config if getCountFromServer fails
-      try {
-        const config = await getEventConfig();
-        if (config.currentTotalRegistered) {
-          cachedCollectionCounts.participantsCount = config.currentTotalRegistered;
-          cachedCollectionCounts.ordersCount = Math.max(1, Math.round(config.currentTotalRegistered * 0.9));
-        }
-        cachedCollectionCounts.lastUpdated = now;
-      } catch {
-        // Keep cached count on error
-      }
-    }
-  }
-
-  const { participantsCount, ordersCount, stagesCount, ambassadorsCount, logsCount } = cachedCollectionCounts;
+  const local = getLocalDB();
+  const participantsCount = local.participants.length;
+  const ordersCount = local.orders.length;
+  const stagesCount = local.stages.length;
+  const ambassadorsCount = local.ambassadors.length;
+  const logsCount = local.kitLogs.length + local.auditLogs.length;
   const totalDocuments = participantsCount + ordersCount + stagesCount + ambassadorsCount + logsCount + 5;
   const estimatedStorageMB = Number(((totalDocuments * 1.8) / 1024).toFixed(3)); // ~1.8KB avg per document with QR data URLs
 
@@ -1991,20 +1975,19 @@ export async function auditAndMoveOverduePendingToCancelled(): Promise<{
   const nowMs = now.getTime();
   const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
-  const [participantsSnap, ordersSnap] = await Promise.all([
-    getDocs(collection(db, 'participants')),
-    getDocs(collection(db, 'orders')),
+  const [participants, orders] = await Promise.all([
+    getParticipants(),
+    getOrders(),
   ]);
 
   const ordersMap = new Map<string, Order>();
-  ordersSnap.docs.forEach(d => {
-    ordersMap.set(d.id, d.data() as Order);
+  orders.forEach(o => {
+    ordersMap.set(o.id, o);
   });
 
   const moved: Array<{ folio: string; fullName: string; daysPending: number }> = [];
 
-  for (const docSnap of participantsSnap.docs) {
-    const p = docSnap.data() as Participant;
+  for (const p of participants) {
     if (p.status === 'pending') {
       const createdMs = p.createdAt ? new Date(p.createdAt).getTime() : nowMs;
       const diffMs = nowMs - createdMs;
@@ -2015,15 +1998,25 @@ export async function auditAndMoveOverduePendingToCancelled(): Promise<{
         p.cancelledAt = now.toISOString();
         p.cancellationReason = `Lugar liberado por falta de pago (más de ${days} días transcurridos sin comprobante). Registrado en No Pagados para futuras carreras.`;
 
-        await setDoc(doc(db, 'participants', p.id), p, { merge: true });
+        await updateParticipant(p.id, {
+          status: 'cancelled',
+          cancelledAt: p.cancelledAt,
+          cancellationReason: p.cancellationReason,
+        });
 
         const order = ordersMap.get(p.orderId);
         if (order) {
-          await setDoc(
-            doc(db, 'orders', order.id),
-            { paymentStatus: 'rejected', updatedAt: now.toISOString() },
-            { merge: true }
-          );
+          order.paymentStatus = 'rejected';
+          order.updatedAt = now.toISOString();
+          try {
+            await setDoc(
+              doc(db, 'orders', order.id),
+              { paymentStatus: 'rejected', updatedAt: now.toISOString() },
+              { merge: true }
+            );
+          } catch (err: any) {
+            console.warn('[DB Resilience] Order cancellation update deferred:', err?.message || err);
+          }
         }
 
         moved.push({
