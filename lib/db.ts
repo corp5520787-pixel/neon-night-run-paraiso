@@ -1755,11 +1755,10 @@ export async function recordAuditLog(
     saveLocalDB(local);
   } catch (e) {}
 
-  try {
-    await setDoc(doc(db, 'audit_logs', log.id), log);
-    recordDbOp('WRITE', 'audit_logs', 1);
-  } catch (err: any) {
-    logDbResilienceInfo('Audit log write deferred', err);
+  if (!isFirestoreWriteBlocked()) {
+    setDoc(doc(db, 'audit_logs', log.id), log)
+      .then(() => recordDbOp('WRITE', 'audit_logs', 1))
+      .catch((err) => recordFirestoreError(err, 'write'));
   }
   return log;
 }
@@ -1893,22 +1892,28 @@ export async function deleteParticipant(participantId: string, userEmail = 'admi
     cachedParticipants.data = local.participants;
   }
 
-  try {
-    await deleteDoc(doc(db, 'participants', original.id));
-    recordDbOp('DELETE', `participants/${original.id}`, 1);
-  } catch (err: any) {
-    console.warn('[DB Resilience] Firestore delete deferred, participant removed from local storage:', err?.message || err);
-  }
+  // Non-blocking background Firestore sync so HTTP response is instant
+  if (!isFirestoreWriteBlocked()) {
+    (async () => {
+      try {
+        await deleteDoc(doc(db, 'participants', original.id));
+        recordDbOp('DELETE', `participants/${original.id}`, 1);
+      } catch (err: any) {
+        recordFirestoreError(err, 'write');
+        console.warn('[DB Resilience] Firestore delete deferred, participant removed from local storage:', err?.message || err);
+      }
 
-  // If confirmed, adjust registered total
-  if (original.status === 'confirmed') {
-    try {
-      const config = await getEventConfig();
-      config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - 1);
-      await updateEventConfig({ currentTotalRegistered: config.currentTotalRegistered });
-    } catch (e) {
-      console.error('Error adjusting metrics on participant deletion:', e);
-    }
+      // If confirmed, adjust registered total
+      if (original.status === 'confirmed') {
+        try {
+          const config = await getEventConfig();
+          config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - 1);
+          await updateEventConfig({ currentTotalRegistered: config.currentTotalRegistered });
+        } catch (e) {
+          console.error('Error adjusting metrics on participant deletion:', e);
+        }
+      }
+    })();
   }
 
   await recordAuditLog('PARTICIPANT_DELETED', 'participant', original.id, userEmail, 'admin', `Participante ${original.fullName} (Folio: ${original.folio}) eliminado`);
