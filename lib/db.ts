@@ -1262,81 +1262,79 @@ export async function updateOrderStatus(
   notes?: string
 ): Promise<Order | null> {
   await ensureSeeded();
-  const order = await getOrder(orderId);
+  const local = getLocalDB();
+  const now = new Date().toISOString();
+
+  // Find order in local storage or getOrder
+  let order = await getOrder(orderId);
   if (!order) return null;
 
   const previousStatus = order.paymentStatus;
-  const now = new Date().toISOString();
-
   order.paymentStatus = newStatus;
   order.updatedAt = now;
-
-  const orderRef = doc(db, 'orders', order.id);
 
   if (newStatus === 'approved') {
     order.confirmedAt = now;
     order.confirmedBy = confirmedBy;
     if (notes) order.transferNotes = notes;
+  }
 
-    const participantsSnap = await getDocs(query(collection(db, 'participants'), where('orderId', '==', order.id)));
-    for (const d of participantsSnap.docs) {
-      const p = d.data() as Participant;
-      p.status = 'confirmed';
-      if (!p.qrCodeDataUrl) {
-        p.qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${p.folio}`);
-      }
-      await setDoc(doc(db, 'participants', p.id), p);
-    }
+  // 1. Instant Local Storage Update
+  const localOrderIdx = local.orders.findIndex(o => o.id === order.id || o.orderNumber === order.orderNumber);
+  if (localOrderIdx !== -1) {
+    local.orders[localOrderIdx] = { ...local.orders[localOrderIdx], ...order };
+  }
 
-    if (previousStatus !== 'approved') {
-      const config = await getEventConfig();
-      config.currentTotalRegistered += order.participantsCount;
-      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), config);
-
-      const stageRef = doc(db, 'stages', order.stageId);
-      const stageSnap = await getDoc(stageRef);
-      if (stageSnap.exists()) {
-        const stage = stageSnap.data() as PricingStage;
-        stage.soldCount += order.participantsCount;
-        await setDoc(stageRef, stage);
-      }
-
-      if (order.ambassadorCodeUsed) {
-        const q = query(collection(db, 'ambassadors'), where('code', '==', order.ambassadorCodeUsed));
-        const ambSnap = await getDocs(q);
-        if (!ambSnap.empty) {
-          const ambDoc = ambSnap.docs[0];
-          const amb = ambDoc.data() as AmbassadorCode;
-          amb.usedCount += order.participantsCount;
-          amb.totalRevenue += order.totalAmount;
-          await setDoc(doc(db, 'ambassadors', amb.id), amb);
+  // Update associated participants in local storage
+  for (let i = 0; i < local.participants.length; i++) {
+    if (local.participants[i].orderId === order.id || local.participants[i].orderId === orderId) {
+      if (newStatus === 'approved') {
+        local.participants[i].status = 'confirmed';
+        if (!local.participants[i].qrCodeDataUrl) {
+          local.participants[i].qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${local.participants[i].folio}`);
         }
+      } else if (newStatus === 'cancelled' || newStatus === 'rejected') {
+        local.participants[i].status = 'cancelled';
       }
-    }
-  } else if (newStatus === 'cancelled' || newStatus === 'rejected') {
-    if (previousStatus === 'approved') {
-      const config = await getEventConfig();
-      config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - order.participantsCount);
-      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), config);
-
-      const stageRef = doc(db, 'stages', order.stageId);
-      const stageSnap = await getDoc(stageRef);
-      if (stageSnap.exists()) {
-        const stage = stageSnap.data() as PricingStage;
-        stage.soldCount = Math.max(0, stage.soldCount - order.participantsCount);
-        await setDoc(stageRef, stage);
-      }
-    }
-    const participantsSnap = await getDocs(query(collection(db, 'participants'), where('orderId', '==', order.id)));
-    for (const d of participantsSnap.docs) {
-      const p = d.data() as Participant;
-      p.status = 'cancelled';
-      await setDoc(doc(db, 'participants', p.id), p);
     }
   }
 
-  const { participants, ...orderData } = order;
-  await setDoc(orderRef, orderData);
+  saveLocalDB(local);
+  if (cachedParticipants) {
+    cachedParticipants.data = local.participants;
+  }
+
+  // 2. Firestore Sync
+  try {
+    if (!isFirestoreWriteBlocked()) {
+      const orderRef = doc(db, 'orders', order.id);
+      const { participants, ...orderData } = order;
+      await setDoc(orderRef, orderData, { merge: true });
+
+      const participantsSnap = await getDocs(query(collection(db, 'participants'), where('orderId', '==', order.id)));
+      for (const d of participantsSnap.docs) {
+        const p = d.data() as Participant;
+        if (newStatus === 'approved') {
+          p.status = 'confirmed';
+          if (!p.qrCodeDataUrl) {
+            p.qrCodeDataUrl = await generateQRCodeDataUrl(`${resolvePublicAppUrl()}/participante/${p.folio}`);
+          }
+        } else if (newStatus === 'cancelled' || newStatus === 'rejected') {
+          p.status = 'cancelled';
+        }
+        await setDoc(doc(db, 'participants', p.id), p, { merge: true });
+      }
+
+      if (newStatus === 'approved' && previousStatus !== 'approved') {
+        const config = await getEventConfig();
+        config.currentTotalRegistered += order.participantsCount;
+        await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), config, { merge: true });
+      }
+    }
+  } catch (err: any) {
+    recordFirestoreError(err, 'write');
+    logDbResilienceInfo('updateOrderStatus stored locally, Firestore deferred', err);
+  }
 
   await recordAuditLog(
     'ORDER_STATUS_CHANGED',

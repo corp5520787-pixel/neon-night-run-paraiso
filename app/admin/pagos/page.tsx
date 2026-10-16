@@ -34,6 +34,22 @@ export default function AdminPagosPage() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
 
+  // Toast notification state
+  const [toast, setToast] = useState<{
+    id: number;
+    title: string;
+    subtitle?: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+
+  const showToast = (title: string, subtitle?: string, type: 'success' | 'error' | 'info' = 'success') => {
+    const id = Date.now();
+    setToast({ id, title, subtitle, type });
+    setTimeout(() => {
+      setToast(curr => (curr?.id === id ? null : curr));
+    }, 5500);
+  };
+
   const fetchOrders = async () => {
     setLoading(true);
     try {
@@ -56,21 +72,41 @@ export default function AdminPagosPage() {
   const handleUpdatePayment = async (orderId: string, newStatus: 'approved' | 'rejected') => {
     setProcessing(true);
     setModalError(null);
+    const orderName = selectedOrder?.customerName || '';
+    const orderNum = selectedOrder?.orderNumber || '';
+
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ paymentStatus: newStatus }),
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setSelectedOrder(null);
+        if (newStatus === 'approved') {
+          showToast(
+            '¡Pago Aprobado y Boletos Activados!',
+            `La orden ${orderNum} de ${orderName} fue aprobada con éxito.`,
+            'success'
+          );
+        } else {
+          showToast(
+            'Orden Rechazada',
+            `La orden ${orderNum} de ${orderName} fue rechazada.`,
+            'info'
+          );
+        }
         fetchOrders();
       } else {
-        setModalError(data.error || 'Error al actualizar pago');
+        const errorMsg = data.error || 'Error al actualizar pago';
+        setModalError(errorMsg);
+        showToast('Error al actualizar pago', errorMsg, 'error');
       }
     } catch {
-      setModalError('Error de conexión con el servidor');
+      const errorMsg = 'Error de conexión con el servidor';
+      setModalError(errorMsg);
+      showToast('Error de conexión', errorMsg, 'error');
     } finally {
       setProcessing(false);
     }
@@ -78,19 +114,24 @@ export default function AdminPagosPage() {
 
   const confirmDeleteOrder = async () => {
     if (!orderToDelete) return;
+    const num = orderToDelete.orderNumber;
+    const name = orderToDelete.customerName;
     setProcessing(true);
     try {
       const res = await fetch(`/api/orders/${orderToDelete.id}`, {
         method: 'DELETE',
       });
-      if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
         setOrderToDelete(null);
+        showToast('¡Orden eliminada con éxito!', `La orden ${num} de ${name} fue eliminada.`, 'success');
         fetchOrders();
       } else {
-        alert('Error al eliminar la orden');
+        showToast('Error al eliminar', data.error || 'No se pudo eliminar la orden.', 'error');
       }
     } catch (err) {
       console.error('Error deleting order:', err);
+      showToast('Error de conexión', 'No se pudo conectar para eliminar la orden.', 'error');
     } finally {
       setProcessing(false);
     }
@@ -115,7 +156,48 @@ export default function AdminPagosPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* FLOATING TOAST NOTIFICATION */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-50 p-4 max-w-md border-2 rounded-2xl shadow-2xl flex items-center justify-between gap-3 text-sm font-bold animate-in fade-in slide-in-from-top-4 duration-300 ${
+          toast.type === 'success'
+            ? 'bg-[#051c14] border-emerald-400 text-emerald-200'
+            : toast.type === 'error'
+            ? 'bg-[#2a080c] border-rose-500 text-rose-200'
+            : 'bg-[#061826] border-cyan-400 text-cyan-200'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              toast.type === 'success'
+                ? 'bg-emerald-500/20 text-emerald-400'
+                : toast.type === 'error'
+                ? 'bg-rose-500/20 text-rose-400'
+                : 'bg-cyan-500/20 text-cyan-400'
+            }`}>
+              {toast.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5" />
+              ) : toast.type === 'error' ? (
+                <AlertTriangle className="w-5 h-5" />
+              ) : (
+                <ShieldCheck className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <div className="text-white text-sm font-extrabold">{toast.title}</div>
+              {toast.subtitle && (
+                <div className="text-[11px] opacity-90 font-normal mt-0.5">{toast.subtitle}</div>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setToast(null)}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

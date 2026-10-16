@@ -32,12 +32,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ success: false, error: 'Orden no encontrada' }, { status: 404 });
     }
 
-    // If approved, send confirmation emails with QR to each participant
+    // If approved, send confirmation emails with QR in non-blocking background
     if (paymentStatus === 'approved' && updatedOrder.participants) {
       const appUrl = resolvePublicAppUrl(req);
-      for (const p of updatedOrder.participants) {
-        await sendConfirmationEmail({ order: updatedOrder, participant: p, appUrl });
-      }
+      Promise.all(
+        updatedOrder.participants.map(p =>
+          sendConfirmationEmail({ order: updatedOrder, participant: p, appUrl }).catch(err =>
+            console.error('Non-blocking confirmation email dispatch notice:', err)
+          )
+        )
+      ).catch(() => {});
     }
 
     return NextResponse.json({ success: true, data: updatedOrder });
