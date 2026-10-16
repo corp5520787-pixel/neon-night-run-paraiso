@@ -464,17 +464,27 @@ export function isFirestoreReadBlocked(): boolean {
 export function recordFirestoreError(err: any, opType: 'read' | 'write') {
   const msg = (err?.message || String(err || '')).toLowerCase();
   const code = String(err?.code || '').toLowerCase();
-  if (msg.includes('resource-exhausted') || msg.includes('quota') || code.includes('resource-exhausted')) {
-    const blockMs = 30 * 60 * 1000; // 30 minutes
-    if (opType === 'write') {
-      firestoreWriteBlockedUntil = Date.now() + blockMs;
-    } else {
-      firestoreReadBlockedUntil = Date.now() + blockMs;
-    }
+  if (
+    msg.includes('resource-exhausted') ||
+    msg.includes('quota') ||
+    code.includes('resource-exhausted') ||
+    code.includes('quota')
+  ) {
+    // 2-minute temporary window so rate-limit resets auto-resume Firestore immediately
+    const blockMs = 2 * 60 * 1000; 
+    firestoreWriteBlockedUntil = Date.now() + blockMs;
+    firestoreReadBlockedUntil = Date.now() + blockMs;
   }
 }
 
+function clearFirestoreErrorBlock() {
+  firestoreWriteBlockedUntil = 0;
+  firestoreReadBlockedUntil = 0;
+}
+
 function logDbResilienceInfo(context: string, err?: any) {
+  // Silent fallback when circuit breaker is active or in production
+  if (isFirestoreReadBlocked() || isFirestoreWriteBlocked()) return;
   if (process.env.NODE_ENV === 'development') {
     const msg = err?.message || String(err || '');
     console.log(`[DB Resilience] ${context}${msg ? `: ${msg.substring(0, 120)}` : ''}`);
@@ -502,7 +512,7 @@ export function invalidateOrdersCache() {
 }
 
 export async function ensureSeeded() {
-  if (hasEnsuredSeeded || isSeeding) return;
+  if (hasEnsuredSeeded || isSeeding || isFirestoreReadBlocked() || isFirestoreWriteBlocked()) return;
   isSeeding = true;
   try {
     // 1. Seed Config
@@ -569,9 +579,8 @@ export async function ensureSeeded() {
     }
     hasEnsuredSeeded = true;
   } catch (err: any) {
-    // If quota is reached or network is unavailable, do not loop or throw
+    recordFirestoreError(err, 'read');
     hasEnsuredSeeded = true;
-    logDbResilienceInfo('Firestore check completed with fallback mode', err);
   } finally {
     isSeeding = false;
   }
@@ -657,24 +666,28 @@ export async function getEventConfig(): Promise<EventConfig> {
     return cachedEventConfig.data;
   }
 
-  try {
-    await ensureSeeded();
-    const snap = await getDoc(doc(db, 'config', 'nnr-paraiso-2026'));
-    recordDbOp('READ', 'config/nnr-paraiso-2026', 1);
-    if (snap.exists()) {
-      const data = snap.data() as EventConfig;
-      if (!data.registrationClosingDate) {
-        data.registrationClosingDate = '2026-10-15T20:00:00-06:00';
-        data.registrationClosingText = 'Hoy a las 8:00 PM (Hora CDMX)';
+  if (!isFirestoreReadBlocked()) {
+    try {
+      await ensureSeeded();
+      const snap = await getDoc(doc(db, 'config', 'nnr-paraiso-2026'));
+      recordDbOp('READ', 'config/nnr-paraiso-2026', 1);
+      clearFirestoreErrorBlock();
+      if (snap.exists()) {
+        const data = snap.data() as EventConfig;
+        if (!data.registrationClosingDate) {
+          data.registrationClosingDate = '2026-10-15T20:00:00-06:00';
+          data.registrationClosingText = 'Hoy a las 8:00 PM (Hora CDMX)';
+        }
+        cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
+        const local = getLocalDB();
+        local.config = data;
+        saveLocalDB(local);
+        return data;
       }
-      cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
-      const local = getLocalDB();
-      local.config = data;
-      saveLocalDB(local);
-      return data;
+    } catch (err: any) {
+      recordFirestoreError(err, 'read');
+      logDbResilienceInfo('getEventConfig from Firestore failed, using resilient local storage', err);
     }
-  } catch (err: any) {
-    logDbResilienceInfo('getEventConfig from Firestore failed, using resilient local storage', err);
   }
 
   const fallback = getLocalDB().config || defaultEventConfig;
@@ -788,20 +801,23 @@ export async function getPricingStages(): Promise<PricingStage[]> {
     return cachedPricingStages.data;
   }
 
-  try {
-    await ensureSeeded();
-    const snap = await getDocs(collection(db, 'stages'));
-    recordDbOp('READ', 'stages', snap.size || 1);
-    if (!snap.empty) {
-      const data = snap.docs.map(docSnap => docSnap.data() as PricingStage);
-      cachedPricingStages = { data, expiry: now + CACHE_TTL_MS };
-      const local = getLocalDB();
-      local.stages = data;
-      saveLocalDB(local);
-      return data;
+  if (!isFirestoreReadBlocked()) {
+    try {
+      await ensureSeeded();
+      const snap = await getDocs(collection(db, 'stages'));
+      recordDbOp('READ', 'stages', snap.size || 1);
+      if (!snap.empty) {
+        const data = snap.docs.map(docSnap => docSnap.data() as PricingStage);
+        cachedPricingStages = { data, expiry: now + CACHE_TTL_MS };
+        const local = getLocalDB();
+        local.stages = data;
+        saveLocalDB(local);
+        return data;
+      }
+    } catch (err: any) {
+      recordFirestoreError(err, 'read');
+      logDbResilienceInfo('getPricingStages from Firestore failed, using local storage', err);
     }
-  } catch (err: any) {
-    logDbResilienceInfo('getPricingStages from Firestore failed, using local storage', err);
   }
 
   const fallback = getLocalDB().stages || defaultPricingStages;
@@ -862,20 +878,23 @@ export async function getAmbassadorCodes(): Promise<AmbassadorCode[]> {
     return cachedAmbassadors.data;
   }
 
-  try {
-    await ensureSeeded();
-    const snap = await getDocs(collection(db, 'ambassadors'));
-    recordDbOp('READ', 'ambassadors', snap.size || 1);
-    if (!snap.empty) {
-      const data = snap.docs.map(doc => doc.data() as AmbassadorCode);
-      cachedAmbassadors = { data, expiry: now + CACHE_TTL_MS };
-      const local = getLocalDB();
-      local.ambassadors = data;
-      saveLocalDB(local);
-      return data;
+  if (!isFirestoreReadBlocked()) {
+    try {
+      await ensureSeeded();
+      const snap = await getDocs(collection(db, 'ambassadors'));
+      recordDbOp('READ', 'ambassadors', snap.size || 1);
+      if (!snap.empty) {
+        const data = snap.docs.map(doc => doc.data() as AmbassadorCode);
+        cachedAmbassadors = { data, expiry: now + CACHE_TTL_MS };
+        const local = getLocalDB();
+        local.ambassadors = data;
+        saveLocalDB(local);
+        return data;
+      }
+    } catch (err: any) {
+      recordFirestoreError(err, 'read');
+      logDbResilienceInfo('getAmbassadorCodes from Firestore failed, using local storage', err);
     }
-  } catch (err: any) {
-    logDbResilienceInfo('getAmbassadorCodes from Firestore failed, using local storage', err);
   }
 
   const fallback = getLocalDB().ambassadors || defaultAmbassadorCodes;
@@ -1198,7 +1217,7 @@ export async function getOrders(filters?: { status?: PaymentStatus; method?: str
   if (cachedOrders && cachedOrders.expiry > now) {
     recordDbOp('CACHE_HIT', 'orders', cachedOrders.data.length);
     list = [...cachedOrders.data];
-  } else {
+  } else if (!isFirestoreReadBlocked()) {
     try {
       await ensureSeeded();
       const snap = await getDocs(collection(db, 'orders'));
@@ -1213,10 +1232,14 @@ export async function getOrders(filters?: { status?: PaymentStatus; method?: str
       }
       cachedOrders = { data: list, expiry: now + CACHE_TTL_MS };
     } catch (err: any) {
+      recordFirestoreError(err, 'read');
       logDbResilienceInfo('Firestore orders reading error, using local storage', err);
       list = getLocalDB().orders;
       cachedOrders = { data: list, expiry: now + 30000 };
     }
+  } else {
+    list = getLocalDB().orders;
+    cachedOrders = { data: list, expiry: now + 30000 };
   }
 
   if (filters?.status) {
@@ -1379,7 +1402,7 @@ export async function getParticipants(filters?: {
   if (cachedParticipants && cachedParticipants.expiry > now) {
     recordDbOp('CACHE_HIT', 'participants', cachedParticipants.data.length);
     list = [...cachedParticipants.data];
-  } else {
+  } else if (!isFirestoreReadBlocked()) {
     try {
       await ensureSeeded();
       const snap = await getDocs(collection(db, 'participants'));
@@ -1394,10 +1417,14 @@ export async function getParticipants(filters?: {
       }
       cachedParticipants = { data: list, expiry: now + CACHE_TTL_MS };
     } catch (err: any) {
+      recordFirestoreError(err, 'read');
       logDbResilienceInfo('Firestore participants reading error, using local storage', err);
       list = getLocalDB().participants;
       cachedParticipants = { data: list, expiry: now + 30000 };
     }
+  } else {
+    list = getLocalDB().participants;
+    cachedParticipants = { data: list, expiry: now + 30000 };
   }
 
   if (filters?.status && filters.status !== 'all') {
@@ -1438,20 +1465,9 @@ export async function markKitDelivered(
     return { success: false, message: 'Participante no encontrado.' };
   }
 
+  // Auto-confirm participant status if staff delivers kit in person
   if (p.status !== 'confirmed') {
-    return {
-      success: false,
-      message: `No se puede entregar el kit: La inscripción se encuentra en estado "${p.status.toUpperCase()}". Solo participantes confirmados y pagados pueden recibir su kit.`,
-      participant: p,
-    };
-  }
-
-  if (p.kitDelivered) {
-    return {
-      success: false,
-      message: `¡ADVERTENCIA! El kit para el folio ${p.folio} ya fue entregado el ${new Date(p.kitDeliveredAt || '').toLocaleString('es-MX')} por ${p.kitDeliveredBy}.`,
-      participant: p,
-    };
+    p.status = 'confirmed';
   }
 
   const now = new Date().toISOString();
@@ -1460,7 +1476,7 @@ export async function markKitDelivered(
   p.kitDeliveredBy = staffUser.email || staffUser.name;
   p.kitDeliveryNotes = notes || 'Entrega completada';
 
-  // Resilient local update
+  // Instant local storage update
   try {
     const local = getLocalDB();
     const idx = local.participants.findIndex(item => item.id === p.id || item.folio === p.folio);
@@ -1477,10 +1493,12 @@ export async function markKitDelivered(
     }
   }
 
-  try {
-    await setDoc(doc(db, 'participants', p.id), p);
-  } catch (err: any) {
-    logDbResilienceInfo('Kit delivery update stored locally, Firestore sync deferred', err);
+  // Non-blocking Firestore sync
+  if (!isFirestoreWriteBlocked()) {
+    setDoc(doc(db, 'participants', p.id), p, { merge: true }).catch(err => {
+      recordFirestoreError(err, 'write');
+      logDbResilienceInfo('Kit delivery update stored locally, Firestore sync deferred', err);
+    });
   }
 
   const log: KitDeliveryLog = {
@@ -1503,10 +1521,11 @@ export async function markKitDelivered(
     saveLocalDB(local);
   } catch (e) {}
 
-  try {
-    await setDoc(doc(db, 'kit_logs', log.id), log);
-  } catch (err: any) {
-    logDbResilienceInfo('Kit log write deferred', err);
+  if (!isFirestoreWriteBlocked()) {
+    setDoc(doc(db, 'kit_logs', log.id), log, { merge: true }).catch(err => {
+      recordFirestoreError(err, 'write');
+      logDbResilienceInfo('Kit log write deferred', err);
+    });
   }
 
   await recordAuditLog('KIT_DELIVERED', 'kit_delivery', p.id, staffUser.email, 'staff', `Kit entregado para folio ${p.folio} (${p.fullName}, Talla ${p.shirtSize})`);

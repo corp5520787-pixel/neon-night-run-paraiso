@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     const { participantId, deliveredBy, notes } = body;
 
     if (!participantId) {
-      return NextResponse.json({ success: false, error: 'ID de participante es requerido' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'ID o Folio de participante es requerido' }, { status: 400 });
     }
 
     const staffUser = {
@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
       name: deliveredBy || 'Staff Módulo Central',
     };
 
-    const result = markKitDelivered(participantId, staffUser, notes);
+    const result = await markKitDelivered(participantId, staffUser, notes);
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error delivering kit:', error);
-    return NextResponse.json({ success: false, error: 'Error al registrar entrega de kit' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Error al registrar entrega de kit' }, { status: 500 });
   }
 }
