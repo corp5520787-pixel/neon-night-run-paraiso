@@ -578,42 +578,66 @@ export async function ensureSeeded() {
 }
 
 async function getNextFolioNumber(): Promise<number> {
+  const local = getLocalDB();
+  const maxLocalNumber = local.participants.reduce((max, p) => {
+    const m = p.folio?.match(/NNR-(\d+)/);
+    const n = m ? parseInt(m[1], 10) : 0;
+    return n > max ? n : max;
+  }, 0);
+
+  if (isFirestoreReadBlocked() || isFirestoreWriteBlocked()) {
+    const next = Math.max(local.nextFolioNumber || 0, maxLocalNumber) + 1;
+    local.nextFolioNumber = next + 1;
+    saveLocalDB(local);
+    return next;
+  }
+
   try {
     const counterRef = doc(db, 'counters', 'folios');
     const snap = await getDoc(counterRef);
-    if (!snap.exists()) {
-      await setDoc(counterRef, { value: 10 });
-      return 5;
+    let current = snap.exists() ? (snap.data().value || 1) : maxLocalNumber + 1;
+    if (current <= maxLocalNumber) {
+      current = maxLocalNumber + 1;
     }
-    const current = snap.data().value || 5;
-    await updateDoc(counterRef, { value: increment(1) });
-    return current;
-  } catch (err: any) {
-    logDbResilienceInfo('getNextFolioNumber falling back to local counter', err);
-    const local = getLocalDB();
-    const current = local.nextFolioNumber || (local.participants.length + 1);
+    await setDoc(counterRef, { value: current + 1 }, { merge: true });
     local.nextFolioNumber = current + 1;
     saveLocalDB(local);
     return current;
+  } catch (err: any) {
+    recordFirestoreError(err, 'write');
+    logDbResilienceInfo('getNextFolioNumber falling back to local counter', err);
+    const next = Math.max(local.nextFolioNumber || 0, maxLocalNumber) + 1;
+    local.nextFolioNumber = next + 1;
+    saveLocalDB(local);
+    return next;
   }
 }
 
 async function getNextOrderNumber(): Promise<number> {
+  const local = getLocalDB();
+  const maxLocalOrder = local.orders.reduce((max, o) => {
+    const m = o.orderNumber?.match(/ORD-(\d+)/);
+    const n = m ? parseInt(m[1], 10) : 0;
+    return n > max ? n : max;
+  }, 1000);
+
+  if (isFirestoreReadBlocked() || isFirestoreWriteBlocked()) {
+    return maxLocalOrder + 1;
+  }
+
   try {
     const counterRef = doc(db, 'counters', 'orders');
     const snap = await getDoc(counterRef);
-    if (!snap.exists()) {
-      await setDoc(counterRef, { value: 1005 });
-      return 1001;
+    let current = snap.exists() ? (snap.data().value || 1001) : maxLocalOrder + 1;
+    if (current <= maxLocalOrder) {
+      current = maxLocalOrder + 1;
     }
-    const current = snap.data().value || 1001;
-    await updateDoc(counterRef, { value: increment(1) });
+    await setDoc(counterRef, { value: current + 1 }, { merge: true });
     return current;
   } catch (err: any) {
+    recordFirestoreError(err, 'write');
     logDbResilienceInfo('getNextOrderNumber falling back to local counter', err);
-    const local = getLocalDB();
-    const current = 1000 + (local.orders.length + 1);
-    return current;
+    return maxLocalOrder + 1;
   }
 }
 
