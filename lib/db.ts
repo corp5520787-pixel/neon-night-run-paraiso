@@ -2034,5 +2034,60 @@ export async function auditAndMoveOverduePendingToCancelled(): Promise<{
   };
 }
 
+/**
+ * Automatically or manually synchronizes all local records (participants, orders, stages, config)
+ * to Firestore. If Firestore quota limit is reached, it gracefully aborts without throwing,
+ * keeping all local records intact until the quota resets.
+ */
+export async function syncLocalBackupToFirestore(): Promise<{
+  success: boolean;
+  message: string;
+  syncedParticipants: number;
+  syncedOrders: number;
+  error?: string;
+}> {
+  const local = getLocalDB();
+  let syncedParticipants = 0;
+  let syncedOrders = 0;
 
+  try {
+    // 1. Sync config & stages
+    if (local.config) {
+      await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), cleanUndefined(local.config), { merge: true });
+    }
+    if (local.stages && local.stages.length > 0) {
+      for (const st of local.stages) {
+        await setDoc(doc(db, 'stages', st.id), cleanUndefined(st), { merge: true });
+      }
+    }
 
+    // 2. Sync participants
+    for (const p of local.participants) {
+      await setDoc(doc(db, 'participants', p.id), cleanUndefined(p), { merge: true });
+      syncedParticipants++;
+    }
+
+    // 3. Sync orders
+    for (const o of local.orders) {
+      const { participants, ...orderData } = o;
+      await setDoc(doc(db, 'orders', o.id), cleanUndefined(orderData), { merge: true });
+      syncedOrders++;
+    }
+
+    return {
+      success: true,
+      message: `Sincronización completada con éxito: ${syncedParticipants} participantes y ${syncedOrders} órdenes actualizados en Firestore.`,
+      syncedParticipants,
+      syncedOrders,
+    };
+  } catch (err: any) {
+    console.warn('[DB Sync] Firestore synchronization paused (quota limit or network):', err?.message || err);
+    return {
+      success: false,
+      message: `La sincronización a la nube se reanudará cuando Firestore restablezca su cuota diaria. Todos los registros están 100% seguros en el almacenamiento local del servidor.`,
+      syncedParticipants,
+      syncedOrders,
+      error: err?.message || String(err),
+    };
+  }
+}

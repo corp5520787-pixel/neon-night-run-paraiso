@@ -19,6 +19,7 @@ import {
   Info,
   Sparkles,
   ArrowUpRight,
+  CloudUpload,
 } from 'lucide-react';
 import { DatabaseUsageStats } from '@/lib/types';
 
@@ -28,6 +29,27 @@ export default function AdminDatabaseUsagePage() {
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const res = await fetch('/api/admin/sync-db', { method: 'POST' });
+      const json = await res.json();
+      if (json.success) {
+        setSyncFeedback({ type: 'success', text: json.message || 'Sincronización completada exitosamente con Firestore.' });
+      } else {
+        setSyncFeedback({ type: 'info', text: json.message || 'La sincronización se reanudará cuando Firestore restablezca la cuota.' });
+      }
+      fetchUsage();
+    } catch {
+      setSyncFeedback({ type: 'error', text: 'Error de conexión al sincronizar con Firestore.' });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const fetchUsage = async () => {
     try {
@@ -126,13 +148,51 @@ export default function AdminDatabaseUsagePage() {
           <button
             onClick={() => fetchUsage()}
             disabled={loading}
-            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 active:scale-95 transition-all text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-950/50"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 transition-all text-slate-200 font-bold text-xs rounded-xl flex items-center gap-2 border border-slate-700"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Actualizar Ahora</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
+            <span>Consultar Consumo</span>
+          </button>
+
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:scale-95 transition-all text-slate-950 font-black text-xs rounded-xl flex items-center gap-2 shadow-lg shadow-cyan-950/50"
+          >
+            <CloudUpload className={`w-3.5 h-3.5 ${syncing ? 'animate-bounce' : ''}`} />
+            <span>{syncing ? 'Sincronizando...' : 'Sincronizar con Firestore'}</span>
           </button>
         </div>
       </div>
+
+      {syncFeedback && (
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between gap-3 text-xs sm:text-sm font-semibold transition-all ${
+            syncFeedback.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : syncFeedback.type === 'error'
+              ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+              : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {syncFeedback.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            ) : syncFeedback.type === 'error' ? (
+              <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+            ) : (
+              <Info className="w-5 h-5 text-cyan-400 shrink-0" />
+            )}
+            <span>{syncFeedback.text}</span>
+          </div>
+          <button
+            onClick={() => setSyncFeedback(null)}
+            className="text-xs px-2 py-1 rounded bg-black/20 hover:bg-black/40 text-slate-300 font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-center gap-3 text-rose-400 text-sm">

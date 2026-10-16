@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEventConfig, getAmbassadorCodes, getParticipants, getOrders } from '@/lib/db';
+import { getEventConfig, getAmbassadorCodes, getParticipants, getOrders, syncLocalBackupToFirestore } from '@/lib/db';
 import { Participant, Order, DashboardStats } from '@/lib/types';
 
 export async function GET() {
@@ -45,6 +45,9 @@ export async function GET() {
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 10),
     };
+
+    // Attempt background sync to Firestore if quota has reset
+    syncLocalBackupToFirestore().catch(() => {});
 
     return NextResponse.json({
       success: true,
