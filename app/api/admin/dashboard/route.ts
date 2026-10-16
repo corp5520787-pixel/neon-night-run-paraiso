@@ -46,9 +46,6 @@ export async function GET() {
         .slice(0, 10),
     };
 
-    // Attempt background sync to Firestore if quota has reset
-    syncLocalBackupToFirestore().catch(() => {});
-
     return NextResponse.json({
       success: true,
       data: stats,

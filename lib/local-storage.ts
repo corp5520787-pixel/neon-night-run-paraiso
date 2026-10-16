@@ -11,7 +11,6 @@ import {
   RaceModality,
 } from './types';
 import { defaultEventConfig } from './db-defaults';
-import { fullBackupSnapshot } from './full-snapshot';
 
 function getNodeModules() {
   if (typeof window === 'undefined') {
@@ -66,7 +65,28 @@ function ensureDataDir() {
 }
 
 export function generateInitialSnapshot(): DBBackupState {
-  return fullBackupSnapshot;
+  try {
+    const paths = getDataPaths();
+    if (paths && paths.fs.existsSync(paths.backupFile)) {
+      const raw = paths.fs.readFileSync(paths.backupFile, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.participants)) {
+        return parsed;
+      }
+    }
+  } catch (e) {}
+
+  return {
+    config: defaultEventConfig,
+    stages: [],
+    ambassadors: [],
+    orders: [],
+    participants: [],
+    kitLogs: [],
+    auditLogs: [],
+    webhookLogs: [],
+    lastSavedAt: new Date().toISOString(),
+  };
 }
 
 export function getLocalDB(): DBBackupState {

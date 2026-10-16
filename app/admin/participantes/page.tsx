@@ -107,7 +107,7 @@ export default function AdminParticipantesPage() {
       p.phone.toLowerCase().includes(term);
 
     const matchesStatus =
-      statusFilter === 'all' || p.status === statusFilter;
+      statusFilter === 'all' || (statusFilter === 'active' ? p.status !== 'cancelled' : p.status === statusFilter);
 
     const matchesSize =
       sizeFilter === 'all' || p.shirtSize === sizeFilter;
@@ -124,7 +124,7 @@ export default function AdminParticipantesPage() {
       (modalityFilter === 'competitiva' && !isRec);
 
     return matchesSearch && matchesStatus && matchesSize && matchesKit && matchesModality;
-  });
+  }).sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   // Export CSV
   const handleExportCSV = () => {
@@ -491,14 +491,14 @@ export default function AdminParticipantesPage() {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Inscritos</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Corredores Inscritos</span>
             <Users className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl font-black text-white mt-1">
-            {participants.length} <span className="text-xs font-normal text-slate-500">/ 350 cupo</span>
+            {participants.filter(p => p.status !== 'cancelled').length} <span className="text-xs font-normal text-slate-500">/ 350 cupo</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {participants.filter(p => p.status === 'confirmed').length} confirmados • {participants.filter(p => p.status === 'pending').length} pendientes
+            {participants.filter(p => p.status === 'confirmed').length} confirmados • {participants.filter(p => p.status === 'pending').length} pendientes ({participants.length} en base de datos)
           </div>
         </div>
 
@@ -620,10 +620,11 @@ export default function AdminParticipantesPage() {
             onChange={e => setStatusFilter(e.target.value)}
             className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
           >
-            <option value="all">Todos los Estados</option>
-            <option value="confirmed">Confirmados</option>
-            <option value="pending">Pendientes de Pago</option>
-            <option value="cancelled">No Pagados / Cancelados</option>
+            <option value="all">Todos los Registros ({participants.length})</option>
+            <option value="active">Inscritos Activos ({participants.filter(p => p.status !== 'cancelled').length})</option>
+            <option value="confirmed">Confirmados ({participants.filter(p => p.status === 'confirmed').length})</option>
+            <option value="pending">Pendientes de Pago ({participants.filter(p => p.status === 'pending').length})</option>
+            <option value="cancelled">No Pagados / Cancelados ({participants.filter(p => p.status === 'cancelled').length})</option>
           </select>
 
           {/* Size */}

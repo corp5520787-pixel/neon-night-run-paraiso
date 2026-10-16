@@ -450,6 +450,30 @@ let cachedAmbassadors: { data: AmbassadorCode[]; expiry: number } | null = null;
 let cachedParticipants: { data: Participant[]; expiry: number } | null = null;
 let cachedOrders: { data: Order[]; expiry: number } | null = null;
 
+let firestoreWriteBlockedUntil = 0;
+let firestoreReadBlockedUntil = 0;
+
+export function isFirestoreWriteBlocked(): boolean {
+  return Date.now() < firestoreWriteBlockedUntil;
+}
+
+export function isFirestoreReadBlocked(): boolean {
+  return Date.now() < firestoreReadBlockedUntil;
+}
+
+export function recordFirestoreError(err: any, opType: 'read' | 'write') {
+  const msg = (err?.message || String(err || '')).toLowerCase();
+  const code = String(err?.code || '').toLowerCase();
+  if (msg.includes('resource-exhausted') || msg.includes('quota') || code.includes('resource-exhausted')) {
+    const blockMs = 30 * 60 * 1000; // 30 minutes
+    if (opType === 'write') {
+      firestoreWriteBlockedUntil = Date.now() + blockMs;
+    } else {
+      firestoreReadBlockedUntil = Date.now() + blockMs;
+    }
+  }
+}
+
 function logDbResilienceInfo(context: string, err?: any) {
   if (process.env.NODE_ENV === 'development') {
     const msg = err?.message || String(err || '');
@@ -1377,7 +1401,7 @@ export async function getParticipants(filters?: {
     );
   }
 
-  return list.sort((a, b) => a.folio.localeCompare(b.folio));
+  return list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 }
 
 export async function markKitDelivered(
@@ -2053,6 +2077,15 @@ export async function syncLocalBackupToFirestore(): Promise<{
   syncedOrders: number;
   error?: string;
 }> {
+  if (isFirestoreWriteBlocked()) {
+    return {
+      success: false,
+      message: 'La sincronización con la nube está en pausa preventiva por límite diario de escritura en Firestore. Los datos se mantienen 100% seguros y respaldados en el servidor.',
+      syncedParticipants: 0,
+      syncedOrders: 0,
+    };
+  }
+
   const local = getLocalDB();
   let syncedParticipants = 0;
   let syncedOrders = 0;
@@ -2088,7 +2121,8 @@ export async function syncLocalBackupToFirestore(): Promise<{
       syncedOrders,
     };
   } catch (err: any) {
-    console.warn('[DB Sync] Firestore synchronization paused (quota limit or network):', err?.message || err);
+    recordFirestoreError(err, 'write');
+    logDbResilienceInfo('Firestore synchronization paused', err);
     return {
       success: false,
       message: `La sincronización a la nube se reanudará cuando Firestore restablezca su cuota diaria. Todos los registros están 100% seguros en el almacenamiento local del servidor.`,

@@ -2,8 +2,8 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, setLogLevel } from 'firebase/firestore';
 import firebaseConfigJson from '../firebase-applet-config.json';
 
-// Mute internal Firebase gRPC idle stream disconnect noise
-setLogLevel('error');
+// Mute internal Firebase logs completely
+setLogLevel('silent');
 
 // Load Firebase configuration
 let firebaseConfig: any = null;
