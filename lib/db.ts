@@ -450,6 +450,13 @@ let cachedAmbassadors: { data: AmbassadorCode[]; expiry: number } | null = null;
 let cachedParticipants: { data: Participant[]; expiry: number } | null = null;
 let cachedOrders: { data: Order[]; expiry: number } | null = null;
 
+function logDbResilienceInfo(context: string, err?: any) {
+  if (process.env.NODE_ENV === 'development') {
+    const msg = err?.message || String(err || '');
+    console.log(`[DB Resilience] ${context}${msg ? `: ${msg.substring(0, 120)}` : ''}`);
+  }
+}
+
 export function invalidateConfigCache() {
   cachedEventConfig = null;
 }
@@ -540,7 +547,7 @@ export async function ensureSeeded() {
   } catch (err: any) {
     // If quota is reached or network is unavailable, do not loop or throw
     hasEnsuredSeeded = true;
-    console.warn('[DB Resilience] Firestore check completed with fallback mode:', err?.message || err);
+    logDbResilienceInfo('Firestore check completed with fallback mode', err);
   } finally {
     isSeeding = false;
   }
@@ -558,7 +565,7 @@ async function getNextFolioNumber(): Promise<number> {
     await updateDoc(counterRef, { value: increment(1) });
     return current;
   } catch (err: any) {
-    console.warn('[DB Resilience] getNextFolioNumber falling back to local counter:', err?.message || err);
+    logDbResilienceInfo('getNextFolioNumber falling back to local counter', err);
     const local = getLocalDB();
     const current = local.nextFolioNumber || (local.participants.length + 1);
     local.nextFolioNumber = current + 1;
@@ -579,7 +586,7 @@ async function getNextOrderNumber(): Promise<number> {
     await updateDoc(counterRef, { value: increment(1) });
     return current;
   } catch (err: any) {
-    console.warn('[DB Resilience] getNextOrderNumber falling back to local counter:', err?.message || err);
+    logDbResilienceInfo('getNextOrderNumber falling back to local counter', err);
     const local = getLocalDB();
     const current = 1000 + (local.orders.length + 1);
     return current;
@@ -619,7 +626,7 @@ export async function getEventConfig(): Promise<EventConfig> {
       return data;
     }
   } catch (err: any) {
-    console.warn('[DB Resilience] getEventConfig from Firestore failed, using resilient local storage:', err?.message || err);
+    logDbResilienceInfo('getEventConfig from Firestore failed, using resilient local storage', err);
   }
 
   const fallback = getLocalDB().config || defaultEventConfig;
@@ -746,7 +753,7 @@ export async function getPricingStages(): Promise<PricingStage[]> {
       return data;
     }
   } catch (err: any) {
-    console.warn('[DB Resilience] getPricingStages from Firestore failed, using local storage:', err?.message || err);
+    logDbResilienceInfo('getPricingStages from Firestore failed, using local storage', err);
   }
 
   const fallback = getLocalDB().stages || defaultPricingStages;
@@ -820,7 +827,7 @@ export async function getAmbassadorCodes(): Promise<AmbassadorCode[]> {
       return data;
     }
   } catch (err: any) {
-    console.warn('[DB Resilience] getAmbassadorCodes from Firestore failed, using local storage:', err?.message || err);
+    logDbResilienceInfo('getAmbassadorCodes from Firestore failed, using local storage', err);
   }
 
   const fallback = getLocalDB().ambassadors || defaultAmbassadorCodes;
@@ -1158,7 +1165,7 @@ export async function getOrders(filters?: { status?: PaymentStatus; method?: str
       }
       cachedOrders = { data: list, expiry: now + CACHE_TTL_MS };
     } catch (err: any) {
-      console.warn('[DB Resilience] Firestore orders reading error (quota or network), using local storage:', err?.message || err);
+      logDbResilienceInfo('Firestore orders reading error, using local storage', err);
       list = getLocalDB().orders;
       cachedOrders = { data: list, expiry: now + 30000 };
     }
@@ -1341,7 +1348,7 @@ export async function getParticipants(filters?: {
       }
       cachedParticipants = { data: list, expiry: now + CACHE_TTL_MS };
     } catch (err: any) {
-      console.warn('[DB Resilience] Firestore participants reading error (quota or network), using local storage:', err?.message || err);
+      logDbResilienceInfo('Firestore participants reading error, using local storage', err);
       list = getLocalDB().participants;
       cachedParticipants = { data: list, expiry: now + 30000 };
     }
@@ -1427,7 +1434,7 @@ export async function markKitDelivered(
   try {
     await setDoc(doc(db, 'participants', p.id), p);
   } catch (err: any) {
-    console.warn('[DB Resilience] Kit delivery update stored locally, Firestore sync deferred:', err?.message || err);
+    logDbResilienceInfo('Kit delivery update stored locally, Firestore sync deferred', err);
   }
 
   const log: KitDeliveryLog = {
@@ -1453,7 +1460,7 @@ export async function markKitDelivered(
   try {
     await setDoc(doc(db, 'kit_logs', log.id), log);
   } catch (err: any) {
-    console.warn('[DB Resilience] Kit log write deferred:', err?.message || err);
+    logDbResilienceInfo('Kit log write deferred', err);
   }
 
   await recordAuditLog('KIT_DELIVERED', 'kit_delivery', p.id, staffUser.email, 'staff', `Kit entregado para folio ${p.folio} (${p.fullName}, Talla ${p.shirtSize})`);
@@ -1506,7 +1513,7 @@ export async function revertKitDelivered(
   try {
     await setDoc(doc(db, 'participants', p.id), p);
   } catch (err: any) {
-    console.warn('[DB Resilience] Kit revert update stored locally, Firestore sync deferred:', err?.message || err);
+    logDbResilienceInfo('Kit revert update stored locally, Firestore sync deferred', err);
   }
 
   const log: KitDeliveryLog = {
@@ -1532,7 +1539,7 @@ export async function revertKitDelivered(
   try {
     await setDoc(doc(db, 'kit_logs', log.id), log);
   } catch (err: any) {
-    console.warn('[DB Resilience] Kit log write deferred:', err?.message || err);
+    logDbResilienceInfo('Kit log write deferred', err);
   }
 
   await recordAuditLog('KIT_DELIVERY_REVERTED', 'kit_delivery', p.id, adminUser.email, 'admin', `Entrega de kit revertida para folio ${p.folio}: ${reason}`);
@@ -1564,7 +1571,7 @@ export async function updateParticipant(id: string, updates: Partial<Participant
     await setDoc(doc(db, 'participants', docId), updates, { merge: true });
     recordDbOp('WRITE', `participants/${docId}`, 1);
   } catch (err: any) {
-    console.warn('[DB Resilience] Participant update stored locally, Firestore sync deferred:', err?.message || err);
+    logDbResilienceInfo('Participant update stored locally, Firestore sync deferred', err);
   }
 
   if (updated) {
@@ -1656,7 +1663,7 @@ export async function getKitDeliveryLogs(): Promise<KitDeliveryLog[]> {
       return snap.docs.map(doc => doc.data() as KitDeliveryLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
   } catch (err: any) {
-    console.warn('[DB Resilience] kit_logs fetch failed, using local storage:', err?.message || err);
+    logDbResilienceInfo('kit_logs fetch failed, using local storage', err);
   }
   return (getLocalDB().kitLogs || []).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
@@ -1670,7 +1677,7 @@ export async function getAuditLogs(): Promise<AuditLog[]> {
       return snap.docs.map(doc => doc.data() as AuditLog).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }
   } catch (err: any) {
-    console.warn('[DB Resilience] audit_logs fetch failed, using local storage:', err?.message || err);
+    logDbResilienceInfo('audit_logs fetch failed, using local storage', err);
   }
   return (getLocalDB().auditLogs || []).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 }
@@ -1706,7 +1713,7 @@ export async function recordAuditLog(
     await setDoc(doc(db, 'audit_logs', log.id), log);
     recordDbOp('WRITE', 'audit_logs', 1);
   } catch (err: any) {
-    console.warn('[DB Resilience] Audit log write deferred (quota or network):', err?.message || err);
+    logDbResilienceInfo('Audit log write deferred', err);
   }
   return log;
 }
@@ -1729,7 +1736,7 @@ export async function recordWebhookLog(log: Omit<PaymentWebhookLog, 'id' | 'rece
   try {
     await setDoc(doc(db, 'webhook_logs', entry.id), entry);
   } catch (err: any) {
-    console.warn('[DB Resilience] Webhook log write deferred (quota or network):', err?.message || err);
+    logDbResilienceInfo('Webhook log write deferred', err);
   }
   return entry;
 }
