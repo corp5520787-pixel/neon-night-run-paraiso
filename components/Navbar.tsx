@@ -7,9 +7,10 @@ import { isRegistrationClosed } from '@/lib/registration-deadline';
 
 interface NavbarProps {
   isClosed?: boolean;
+  isUpcoming?: boolean;
 }
 
-export default function Navbar({ isClosed: propIsClosed }: NavbarProps) {
+export default function Navbar({ isClosed: propIsClosed, isUpcoming = false }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [closedState, setClosedState] = useState(propIsClosed ?? false);
 
@@ -79,7 +80,7 @@ export default function Navbar({ isClosed: propIsClosed }: NavbarProps) {
               className="px-4 py-2.5 rounded-xl font-extrabold text-xs text-rose-300 bg-rose-950/80 border border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center gap-2 shadow-sm"
             >
               <Lock className="w-4 h-4 text-rose-400" />
-              Registros Cerrados
+              {isUpcoming ? 'Abrimos el sábado 8:00 a. m.' : 'Registros cerrados'}
             </Link>
           )}
         </div>
@@ -145,7 +146,7 @@ export default function Navbar({ isClosed: propIsClosed }: NavbarProps) {
                 className="w-full py-3 rounded-xl font-extrabold text-sm text-rose-300 bg-rose-950/80 border border-rose-500/50 flex items-center justify-center gap-2 shadow-sm"
               >
                 <Lock className="w-4 h-4 text-rose-400" />
-                Registros Cerrados
+                {isUpcoming ? 'Abrimos el sábado 8:00 a. m.' : 'Registros cerrados'}
               </Link>
             )}
           </div>

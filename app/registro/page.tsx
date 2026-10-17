@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import RegistrationClosingCountdown from '@/components/RegistrationClosingCountdown';
 import {
   User,
   Ticket,
@@ -34,7 +35,7 @@ import {
 import Link from 'next/link';
 import { PricingStage, EventConfig, AmbassadorCode, ShirtSize, RaceModality } from '@/lib/types';
 import { defaultEventConfig, defaultPricingStages } from '@/lib/db-defaults';
-import { isRegistrationClosed } from '@/lib/registration-deadline';
+import { getPublicRegistrationPhase, isRegistrationClosed } from '@/lib/registration-deadline';
 
 function calculateAge(birthDateString: string): number {
   if (!birthDateString) return 0;
@@ -61,6 +62,13 @@ function RegistroForm() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [clockNow, setClockNow] = useState(0);
+
+  useEffect(() => {
+    setClockNow(Date.now());
+    const interval = setInterval(() => setClockNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Single Runner Form State
   const [modality, setModality] = useState<RaceModality>('Competitiva');
@@ -219,7 +227,7 @@ function RegistroForm() {
     }
 
     if (isRegistrationClosed(config)) {
-      setErrorMessage('Ya hemos cerrado los registros oficiales. El plazo concluyó hoy a las 8:00 PM (hora Ciudad de México).');
+      setErrorMessage('El registro público solo está disponible el sábado 17 de octubre de 8:00 a. m. a 10:00 p. m. (hora Ciudad de México).');
       return;
     }
 
@@ -275,7 +283,20 @@ function RegistroForm() {
     }
   };
 
-  const isClosed = isRegistrationClosed(config);
+  const isClosed = isRegistrationClosed(config, clockNow);
+  const phase = getPublicRegistrationPhase(config, clockNow);
+
+  if (phase === 'upcoming') {
+    return (
+      <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col justify-between">
+        <Navbar isClosed={true} isUpcoming={true} />
+        <main className="flex-1 flex items-center justify-center px-4 py-12">
+          <RegistrationClosingCountdown config={config} />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   if (isClosed) {
     return (
@@ -297,7 +318,7 @@ function RegistroForm() {
             </h1>
 
             <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto mb-8 leading-relaxed">
-              El periodo oficial de registro para la carrera <strong className="text-white">Neon Night Run Paraíso 2026</strong> ha finalizado el día de hoy a las <strong className="text-rose-400 font-bold">8:00 de la noche (hora Ciudad de México)</strong>.
+              El periodo de registro para la carrera <strong className="text-white">Neon Night Run Paraíso 2026</strong> finalizó el sábado 17 de octubre a las <strong className="text-rose-400 font-bold">10:00 de la noche (hora Ciudad de México)</strong>.
             </p>
 
             <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-6 text-left max-w-xl mx-auto mb-8 space-y-3">
@@ -306,7 +327,7 @@ function RegistroForm() {
                 <span>¿Ya te habías registrado previamente?</span>
               </div>
               <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
-                Si llenaste tu registro antes del cierre de las 8:00 PM y tienes pendiente reportar tu comprobante de pago bancario o deseas consultar tu código QR y número de folio, tus datos siguen activos en nuestro sistema.
+                Si llenaste tu registro y tienes pendiente reportar tu comprobante de pago bancario o deseas consultar tu código QR y número de folio, tus datos siguen activos en nuestro sistema.
               </p>
             </div>
 

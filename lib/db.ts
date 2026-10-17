@@ -675,8 +675,8 @@ export async function getEventConfig(): Promise<EventConfig> {
       if (snap.exists()) {
         const data = snap.data() as EventConfig;
         if (!data.registrationClosingDate) {
-          data.registrationClosingDate = '2026-10-15T20:00:00-06:00';
-          data.registrationClosingText = 'Hoy a las 8:00 PM (Hora CDMX)';
+          data.registrationClosingDate = '2026-10-17T22:00:00-06:00';
+          data.registrationClosingText = 'Sábado 17 de octubre a las 10:00 p. m. (hora Ciudad de México)';
         }
         cachedEventConfig = { data, expiry: now + CACHE_TTL_MS };
         const local = getLocalDB();
@@ -1013,7 +1013,7 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
 
   // Verificar si ya cerraron los registros para inscripciones públicas online
   if (isRegistrationClosed(config) && params.paymentMethod !== 'courtesy' && params.paymentMethod !== 'cash') {
-    throw new Error('Ya hemos cerrado los registros oficiales. El plazo de inscripciones concluyó hoy a las 8:00 PM (hora Ciudad de México).');
+    throw new Error('El registro público solo está disponible el sábado 17 de octubre de 8:00 a. m. a 10:00 p. m. (hora Ciudad de México).');
   }
 
   // Determine individual prices based on modality

@@ -1,28 +1,30 @@
 import { EventConfig } from './types';
 
-// Default closing deadline: Today October 15, 2026 at 8:00 PM (20:00:00) Mexico City time (UTC-6)
-export const DEFAULT_REGISTRATION_CLOSING_ISO = '2026-10-15T20:00:00-06:00';
-export const DEFAULT_REGISTRATION_CLOSING_TEXT = 'Hoy a las 8:00 PM (Hora CDMX)';
+// Saturday, October 17, 2026, in Mexico City (UTC-6 year-round).
+export const PUBLIC_REGISTRATION_OPENS_ISO = '2026-10-17T08:00:00-06:00';
+export const PUBLIC_REGISTRATION_CLOSES_ISO = '2026-10-17T22:00:00-06:00';
+export const DEFAULT_REGISTRATION_CLOSING_ISO = PUBLIC_REGISTRATION_CLOSES_ISO;
+export const DEFAULT_REGISTRATION_CLOSING_TEXT = 'Sábado 17 de octubre a las 10:00 p. m. (hora Ciudad de México)';
 
-/**
- * Checks whether registrations are officially closed based on explicit config or deadline timestamp.
- */
-export function isRegistrationClosed(config?: Partial<EventConfig> | null): boolean {
-  if (config && config.registrationOpen === false) {
-    return true;
-  }
-  const closingIso = config?.registrationClosingDate || DEFAULT_REGISTRATION_CLOSING_ISO;
-  const closingTime = new Date(closingIso).getTime();
-  const now = Date.now();
-  return now >= closingTime;
+export type PublicRegistrationPhase = 'upcoming' | 'open' | 'closed';
+
+/** A manual emergency closure remains effective during the public window. */
+export function getPublicRegistrationPhase(
+  config?: Partial<EventConfig> | null,
+  now = Date.now()
+): PublicRegistrationPhase {
+  if (config?.registrationOpen === false) return 'closed';
+  if (now < Date.parse(PUBLIC_REGISTRATION_OPENS_ISO)) return 'upcoming';
+  if (now < Date.parse(PUBLIC_REGISTRATION_CLOSES_ISO)) return 'open';
+  return 'closed';
 }
 
-/**
- * Returns the target closing date object.
- */
-export function getRegistrationClosingDate(config?: Partial<EventConfig> | null): Date {
-  const closingIso = config?.registrationClosingDate || DEFAULT_REGISTRATION_CLOSING_ISO;
-  return new Date(closingIso);
+export function isRegistrationClosed(config?: Partial<EventConfig> | null, now = Date.now()): boolean {
+  return getPublicRegistrationPhase(config, now) !== 'open';
+}
+
+export function getRegistrationClosingDate(): Date {
+  return new Date(PUBLIC_REGISTRATION_CLOSES_ISO);
 }
 
 export interface TimeLeft {
@@ -34,33 +36,20 @@ export interface TimeLeft {
   isClosed: boolean;
 }
 
-/**
- * Computes remaining time until registration closing.
- */
-export function calculateRegistrationTimeLeft(config?: Partial<EventConfig> | null): TimeLeft {
-  if (config && config.registrationOpen === false) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, isClosed: true };
-  }
-
-  const targetDate = getRegistrationClosingDate(config);
-  const now = Date.now();
-  const difference = targetDate.getTime() - now;
-
-  if (difference <= 0) {
-    return { days: 0, hours: 0, minutes: 0, seconds: 0, totalMs: 0, isClosed: true };
-  }
-
-  const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+/** Count down to opening before 8 a.m. and to closing while registrations are open. */
+export function calculateRegistrationTimeLeft(config?: Partial<EventConfig> | null, now = Date.now()): TimeLeft {
+  const phase = getPublicRegistrationPhase(config, now);
+  const target = phase === 'upcoming'
+    ? Date.parse(PUBLIC_REGISTRATION_OPENS_ISO)
+    : Date.parse(PUBLIC_REGISTRATION_CLOSES_ISO);
+  const totalMs = phase === 'closed' ? 0 : Math.max(0, target - now);
 
   return {
-    days,
-    hours,
-    minutes,
-    seconds,
-    totalMs: difference,
-    isClosed: false,
+    days: Math.floor(totalMs / 86400000),
+    hours: Math.floor((totalMs % 86400000) / 3600000),
+    minutes: Math.floor((totalMs % 3600000) / 60000),
+    seconds: Math.floor((totalMs % 60000) / 1000),
+    totalMs,
+    isClosed: phase !== 'open',
   };
 }

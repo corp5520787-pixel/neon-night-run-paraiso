@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Ya hemos cerrado los registros oficiales. El plazo concluyó hoy a las 8:00 PM (hora Ciudad de México).',
+          error: 'El registro público solo está disponible el sábado 17 de octubre de 8:00 a. m. a 10:00 p. m. (hora Ciudad de México).',
         },
         { status: 403 }
       );

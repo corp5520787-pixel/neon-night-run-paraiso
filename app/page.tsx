@@ -36,12 +36,19 @@ import {
 import { EventConfig, PricingStage } from '@/lib/types';
 import { defaultEventConfig, defaultPricingStages } from '@/lib/db-defaults';
 import RegistrationClosingCountdown from '@/components/RegistrationClosingCountdown';
-import { isRegistrationClosed } from '@/lib/registration-deadline';
+import { getPublicRegistrationPhase, isRegistrationClosed } from '@/lib/registration-deadline';
 
 export default function HomePage() {
   const [config, setConfig] = useState<EventConfig>(defaultEventConfig);
   const [stages, setStages] = useState<PricingStage[]>(defaultPricingStages);
   const [activeFaq, setActiveFaq] = useState<string | null>(null);
+  const [clockNow, setClockNow] = useState(0);
+
+  useEffect(() => {
+    setClockNow(Date.now());
+    const interval = setInterval(() => setClockNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     // Fetch live config & stages from API
@@ -69,11 +76,12 @@ export default function HomePage() {
   const activeStage = stages.find(s => s.active && s.id !== 'stage-team') || stages[1] || stages[0];
   const quotaPercent = Math.min(100, Math.round((config.currentTotalRegistered / config.maxTotalQuota) * 100));
   const spotsLeft = Math.max(0, config.maxTotalQuota - config.currentTotalRegistered);
-  const isClosed = isRegistrationClosed(config);
+  const isClosed = isRegistrationClosed(config, clockNow);
+  const phase = getPublicRegistrationPhase(config, clockNow);
 
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 selection:bg-cyan-500 selection:text-slate-950">
-      <Navbar isClosed={isClosed} />
+      <Navbar isClosed={isClosed} isUpcoming={phase === 'upcoming'} />
 
       {/* ---------------------------------------------------------------------- */}
       {/* 1. HERO SECTION */}
@@ -104,7 +112,7 @@ export default function HomePage() {
             ¡Ilumina tu camino!
           </p>
 
-          {/* DEDICATED REGISTRATION CLOSING COUNTDOWN (HOY A LAS 8:00 PM HORA CDMX) */}
+          {/* Public reopening announcement and live countdown */}
           <div id="cierre-registros" className="mb-6">
             <RegistrationClosingCountdown config={config} />
           </div>
@@ -123,7 +131,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <span className={`w-2.5 h-2.5 rounded-full ${isClosed ? 'bg-rose-400' : 'bg-emerald-400 animate-ping'}`} />
                 <span className={`text-xs font-bold uppercase tracking-wider ${isClosed ? 'text-rose-400' : 'text-yellow-400 animate-pulse'}`}>
-                  {isClosed ? 'REGISTROS CONCLUIDOS' : '¡QUEDAN POCOS LUGARES!'}
+                  {phase === 'upcoming' ? 'ÚLTIMA OPORTUNIDAD · SÁBADO 17' : isClosed ? 'REGISTROS CONCLUIDOS' : '¡QUEDAN POCOS LUGARES!'}
                 </span>
               </div>
               <span className="text-xl sm:text-2xl font-black text-yellow-400 font-mono">
@@ -141,7 +149,7 @@ export default function HomePage() {
             <div className="flex justify-between items-center text-xs text-slate-400 mt-2">
               <span>{config.currentTotalRegistered} corredores inscritos</span>
               <span className="font-semibold text-cyan-300">
-                {isClosed ? 'Periodo finalizado a las 8:00 PM' : `¡Quedan ${spotsLeft} lugares disponibles!`}
+                {phase === 'upcoming' ? 'Abrimos el sábado 17 de 8:00 a. m. a 10:00 p. m.' : isClosed ? 'Periodo de registro finalizado' : `¡Quedan ${spotsLeft} lugares disponibles!`}
               </span>
             </div>
           </div>
@@ -163,7 +171,7 @@ export default function HomePage() {
                 className="w-full sm:w-auto px-8 py-4 rounded-2xl font-black text-base text-rose-200 bg-rose-950/80 border-2 border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center justify-center gap-3 shadow-xl"
               >
                 <Lock className="w-5 h-5 text-rose-400" />
-                <span>Registros Cerrados (8:00 PM)</span>
+                <span>{phase === 'upcoming' ? 'Abrimos el sábado a las 8:00 a. m.' : 'Registros cerrados'}</span>
               </Link>
             )}
 
@@ -300,7 +308,7 @@ export default function HomePage() {
                 className="w-full py-3.5 rounded-xl font-black text-sm text-rose-200 bg-rose-950/80 border border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center justify-center gap-2 shadow-lg"
               >
                 <Lock className="w-4 h-4 text-rose-400" />
-                <span>REGISTROS CERRADOS</span>
+                <span>{phase === 'upcoming' ? 'ABRIMOS EL SÁBADO A LAS 8:00 A. M.' : 'REGISTROS CERRADOS'}</span>
               </Link>
             )}
           </div>
@@ -359,7 +367,7 @@ export default function HomePage() {
                 className="w-full py-3.5 rounded-xl font-black text-sm text-rose-200 bg-rose-950/80 border border-rose-500/50 hover:bg-rose-900/60 transition-all flex items-center justify-center gap-2 shadow-lg"
               >
                 <Lock className="w-4 h-4 text-rose-400" />
-                <span>REGISTROS CERRADOS</span>
+                <span>{phase === 'upcoming' ? 'ABRIMOS EL SÁBADO A LAS 8:00 A. M.' : 'REGISTROS CERRADOS'}</span>
               </Link>
             )}
           </div>
@@ -574,7 +582,7 @@ export default function HomePage() {
               className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl font-black text-lg text-rose-200 bg-rose-950/80 border-2 border-rose-500/50 hover:bg-rose-900/60 transition-all shadow-2xl"
             >
               <Lock className="w-6 h-6 text-rose-400" />
-              <span>Registros Cerrados (8:00 PM)</span>
+              <span>{phase === 'upcoming' ? 'Abrimos el sábado 8:00 a. m.' : 'Registros cerrados'}</span>
             </Link>
           )}
         </div>
@@ -584,6 +592,7 @@ export default function HomePage() {
         currentPrice={activeStage?.price || 350}
         stageName={activeStage?.name || 'Etapa 2'}
         isClosed={isClosed}
+        isUpcoming={phase === 'upcoming'}
       />
 
       <Footer />
