@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getParticipantByFolioOrQr, getOrder } from '@/lib/db';
+import { getParticipantByFolioOrQr, getOrder, invalidateParticipantsCache, syncActiveRegistrationCount } from '@/lib/db';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendCancellationEmail } from '@/lib/email';
@@ -25,6 +25,12 @@ export async function POST(
     participant.cancellationReason = reason;
 
     await setDoc(doc(db, 'participants', participant.id), participant, { merge: true });
+    invalidateParticipantsCache();
+    try {
+      await syncActiveRegistrationCount();
+    } catch (err) {
+      console.error('Registration counter sync after cancellation deferred:', err);
+    }
 
     let order = await getOrder(participant.orderId);
     if (order) {

@@ -511,6 +511,26 @@ export function invalidateOrdersCache() {
   cachedOrders = null;
 }
 
+/** Confirmed and pending runners both hold a place; cancelled runners do not. */
+export async function getActiveRegistrationCount(): Promise<number> {
+  const snapshot = await getCountFromServer(query(
+    collection(db, 'participants'),
+    where('status', 'in', ['confirmed', 'pending'])
+  ));
+  return snapshot.data().count;
+}
+
+/** Keep the display counter in sync with the actual places held in Firestore. */
+export async function syncActiveRegistrationCount(): Promise<number> {
+  const count = await getActiveRegistrationCount();
+  await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), { currentTotalRegistered: count }, { merge: true });
+  if (cachedEventConfig) cachedEventConfig.data.currentTotalRegistered = count;
+  const local = getLocalDB();
+  local.config.currentTotalRegistered = count;
+  saveLocalDB(local);
+  return count;
+}
+
 export async function ensureSeeded() {
   if (hasEnsuredSeeded || isSeeding || isFirestoreReadBlocked() || isFirestoreWriteBlocked()) return;
   isSeeding = true;
@@ -674,6 +694,16 @@ export async function getEventConfig(): Promise<EventConfig> {
       clearFirestoreErrorBlock();
       if (snap.exists()) {
         const data = snap.data() as EventConfig;
+        try {
+          const activeCount = await getActiveRegistrationCount();
+          if (data.currentTotalRegistered !== activeCount) {
+            data.currentTotalRegistered = activeCount;
+            await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), { currentTotalRegistered: activeCount }, { merge: true });
+          }
+        } catch (err: any) {
+          recordFirestoreError(err, 'read');
+          logDbResilienceInfo('Registration counter reconciliation deferred', err);
+        }
         if (!data.registrationClosingDate) {
           data.registrationClosingDate = '2026-10-17T22:00:00-06:00';
           data.registrationClosingText = 'Sábado 17 de octubre a las 10:00 p. m. (hora Ciudad de México)';
@@ -700,6 +730,7 @@ export async function updateEventConfig(newConfig: Partial<EventConfig>, userEma
   const configRef = doc(db, 'config', 'nnr-paraiso-2026');
   const current = await getEventConfig();
   const updated = { ...current, ...newConfig };
+  updated.currentTotalRegistered = await getActiveRegistrationCount();
   await setDoc(configRef, updated);
   recordDbOp('WRITE', 'config/nnr-paraiso-2026', 1);
   invalidateConfigCache();
@@ -1005,9 +1036,8 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
   await ensureSeeded();
   const stage = await getActivePricingStage(params.participants.length);
   const config = await getEventConfig();
-  const configRef = doc(db, 'config', 'nnr-paraiso-2026');
-  
-  if (config.currentTotalRegistered + params.participants.length > config.maxTotalQuota) {
+  const activeCount = await getActiveRegistrationCount();
+  if (activeCount + params.participants.length > config.maxTotalQuota) {
     throw new Error('No hay suficientes lugares disponibles para el cupo solicitado.');
   }
 
@@ -1130,11 +1160,6 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
       await setDoc(doc(db, 'stages', stage.id), stage);
     } catch (e) {}
 
-    config.currentTotalRegistered += params.participants.length;
-    try {
-      await setDoc(configRef, config);
-    } catch (e) {}
-
     if (ambassadorObj) {
       ambassadorObj.usedCount += params.participants.length;
       ambassadorObj.totalRevenue += totalAmount;
@@ -1168,6 +1193,13 @@ export async function createOrder(params: CreateOrderParams): Promise<{ order: O
     await setDoc(doc(db, 'orders', orderId), cleanUndefined(orderData));
   } catch (err: any) {
     console.warn('[DB Resilience] Order write deferred:', err?.message || err);
+  }
+
+  try {
+    await syncActiveRegistrationCount();
+  } catch (err: any) {
+    recordFirestoreError(err, 'write');
+    console.warn('[DB Resilience] Registration counter sync deferred:', err?.message || err);
   }
 
   await recordAuditLog(
@@ -1348,11 +1380,7 @@ export async function updateOrderStatus(
         await setDoc(doc(db, 'participants', p.id), p, { merge: true });
       }
 
-      if (newStatus === 'approved' && previousStatus !== 'approved') {
-        const config = await getEventConfig();
-        config.currentTotalRegistered += order.participantsCount;
-        await setDoc(doc(db, 'config', 'nnr-paraiso-2026'), config, { merge: true });
-      }
+      if (newStatus !== previousStatus) await syncActiveRegistrationCount();
     }
   } catch (err: any) {
     recordFirestoreError(err, 'write');
@@ -1635,6 +1663,10 @@ export async function updateParticipant(id: string, updates: Partial<Participant
     const docId = updated?.id || id;
     await setDoc(doc(db, 'participants', docId), updates, { merge: true });
     recordDbOp('WRITE', `participants/${docId}`, 1);
+    if (updates.status !== undefined) {
+      invalidateParticipantsCache();
+      await syncActiveRegistrationCount();
+    }
   } catch (err: any) {
     logDbResilienceInfo('Participant update stored locally, Firestore sync deferred', err);
   }
@@ -1658,6 +1690,7 @@ export async function getDashboardMetrics() {
   const totalParticipants = participants.length;
   const confirmedParticipants = participants.filter(p => p.status === 'confirmed').length;
   const pendingParticipants = participants.filter(p => p.status === 'pending').length;
+  const activeParticipants = confirmedParticipants + pendingParticipants;
 
   const approvedOrders = orders.filter(o => o.paymentStatus === 'approved');
   const pendingOrders = orders.filter(o => o.paymentStatus === 'pending');
@@ -1666,7 +1699,7 @@ export async function getDashboardMetrics() {
   const totalRevenue = approvedOrders.reduce((sum, o) => sum + o.totalAmount, 0);
   const pendingRevenue = pendingOrders.reduce((sum, o) => sum + o.totalAmount, 0);
 
-  const availableSpots = Math.max(0, config.maxTotalQuota - config.currentTotalRegistered);
+  const availableSpots = Math.max(0, config.maxTotalQuota - activeParticipants);
 
   const shirtSizes: Record<string, number> = { XS: 0, S: 0, M: 0, L: 0, XL: 0, XXL: 0 };
   for (const p of participants) {
@@ -1708,7 +1741,7 @@ export async function getDashboardMetrics() {
     totalRevenue,
     pendingRevenue,
     maxTotalQuota: config.maxTotalQuota,
-    currentTotalRegistered: config.currentTotalRegistered,
+    currentTotalRegistered: activeParticipants,
     availableSpots,
     shirtSizes,
     categoryCount,
@@ -1874,17 +1907,9 @@ export async function deleteOrder(orderId: string, userEmail = 'admin'): Promise
   // Delete the order itself
   await deleteDoc(orderRef);
 
-  // If the order was approved, adjust global quota metrics
+  // Keep stage sales statistics in sync for approved orders.
   if (orderData.paymentStatus === 'approved') {
     try {
-      const configRef = doc(db, 'config', 'nnr-paraiso-2026');
-      const configSnap = await getDoc(configRef);
-      if (configSnap.exists()) {
-        const config = configSnap.data() as EventConfig;
-        config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - orderData.participantsCount);
-        await setDoc(configRef, config);
-      }
-
       const stageRef = doc(db, 'stages', orderData.stageId);
       const stageSnap = await getDoc(stageRef);
       if (stageSnap.exists()) {
@@ -1895,6 +1920,14 @@ export async function deleteOrder(orderId: string, userEmail = 'admin'): Promise
     } catch (e) {
       console.error('Error adjusting metrics on order deletion:', e);
     }
+  }
+
+  invalidateParticipantsCache();
+  try {
+    await syncActiveRegistrationCount();
+  } catch (err: any) {
+    recordFirestoreError(err, 'write');
+    logDbResilienceInfo('Registration counter sync after order deletion deferred', err);
   }
 
   await recordAuditLog('ORDER_DELETED', 'order', orderId, userEmail, 'admin', `Orden ${orderData.orderNumber} por ${orderData.customerName} eliminada por completo (incluyendo sus participantes)`);
@@ -1922,15 +1955,10 @@ export async function deleteParticipant(participantId: string, userEmail = 'admi
         console.warn('[DB Resilience] Firestore delete deferred, participant removed from local storage:', err?.message || err);
       }
 
-      // If confirmed, adjust registered total
-      if (original.status === 'confirmed') {
-        try {
-          const config = await getEventConfig();
-          config.currentTotalRegistered = Math.max(0, config.currentTotalRegistered - 1);
-          await updateEventConfig({ currentTotalRegistered: config.currentTotalRegistered });
-        } catch (e) {
-          console.error('Error adjusting metrics on participant deletion:', e);
-        }
+      try {
+        await syncActiveRegistrationCount();
+      } catch (e) {
+        console.error('Error reconciling registration count after participant deletion:', e);
       }
     })();
   }

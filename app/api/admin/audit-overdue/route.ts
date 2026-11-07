@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getParticipants, getOrders, updateParticipant } from '@/lib/db';
+import { getParticipants, getOrders, invalidateParticipantsCache, syncActiveRegistrationCount, updateParticipant } from '@/lib/db';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Participant, Order } from '@/lib/types';
@@ -176,6 +176,15 @@ export async function POST(req: NextRequest) {
             email: p.email,
           });
         }
+      }
+    }
+
+    if (movedParticipants.length > 0) {
+      invalidateParticipantsCache();
+      try {
+        await syncActiveRegistrationCount();
+      } catch (err) {
+        console.error('Registration counter sync after overdue cancellations deferred:', err);
       }
     }
 
