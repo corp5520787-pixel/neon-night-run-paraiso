@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getParticipantByFolioOrQr, getOrder, invalidateParticipantsCache, syncActiveRegistrationCount } from '@/lib/db';
-import { doc, setDoc } from 'firebase/firestore';
+import { getParticipantByFolioOrQr, getOrder, invalidateParticipantsCache, invalidateOrdersCache, invalidateConfigCache } from '@/lib/db';
+import { doc, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { sendCancellationEmail } from '@/lib/email';
 
@@ -20,23 +20,31 @@ export async function POST(
     }
 
     const now = new Date().toISOString();
+    const participantRef = doc(db, 'participants', participant.id);
+    const orderRef = doc(db, 'orders', participant.orderId);
+    const capacityRef = doc(db, 'last_spots_capacity', '2026-11-07');
+    const configRef = doc(db, 'config', 'nnr-paraiso-2026');
+    await runTransaction(db, async tx => {
+      const [pSnap, oSnap, capacitySnap, configSnap] = await Promise.all([
+        tx.get(participantRef), tx.get(orderRef), tx.get(capacityRef), tx.get(configRef),
+      ]);
+      if (!pSnap.exists()) throw new Error('Participante no encontrado');
+      const active = pSnap.data().status !== 'cancelled';
+      tx.update(participantRef, { status: 'cancelled', cancelledAt: now, cancellationReason: reason });
+      if (oSnap.exists()) tx.update(orderRef, { paymentStatus: 'rejected', updatedAt: now });
+      if (active) {
+        if (configSnap.exists()) tx.set(configRef, { currentTotalRegistered: Math.max(0, (Number(configSnap.data()?.currentTotalRegistered) || 0) - 1) }, { merge: true });
+        if (participant.lastSpotsRequestKey && capacitySnap.exists()) tx.set(capacityRef, { occupied: Math.max(0, (Number(capacitySnap.data()?.occupied) || 0) - 1) }, { merge: true });
+      }
+      return active;
+    });
     participant.status = 'cancelled';
     participant.cancelledAt = now;
     participant.cancellationReason = reason;
-
-    await setDoc(doc(db, 'participants', participant.id), participant, { merge: true });
     invalidateParticipantsCache();
-    try {
-      await syncActiveRegistrationCount();
-    } catch (err) {
-      console.error('Registration counter sync after cancellation deferred:', err);
-    }
-
+    invalidateOrdersCache();
+    invalidateConfigCache();
     let order = await getOrder(participant.orderId);
-    if (order) {
-      await setDoc(doc(db, 'orders', order.id), { paymentStatus: 'rejected', updatedAt: now }, { merge: true });
-    }
-
     if (notifyUser && order) {
       await sendCancellationEmail({
         order,

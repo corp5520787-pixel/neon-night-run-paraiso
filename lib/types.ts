@@ -140,6 +140,7 @@ export interface ParticipantInput {
 export interface Participant extends ParticipantInput {
   id: string;
   orderId: string;
+  lastSpotsRequestKey?: string;
   folio: string; // e.g. NNR-000001
   qrToken: string;
   qrCodeDataUrl?: string;

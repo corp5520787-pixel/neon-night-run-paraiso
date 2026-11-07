@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import {
   EventConfig,
   PricingStage,
@@ -30,7 +31,8 @@ import {
   limit, 
   increment,
   deleteDoc,
-  getCountFromServer
+  getCountFromServer,
+  runTransaction,
 } from 'firebase/firestore';
 
 import { getLocalDB, saveLocalDB } from './local-storage';
@@ -607,67 +609,35 @@ export async function ensureSeeded() {
 }
 
 async function getNextFolioNumber(): Promise<number> {
-  const local = getLocalDB();
-  const maxLocalNumber = local.participants.reduce((max, p) => {
+  const participants = await getParticipants();
+  const maxExistingNumber = participants.reduce((max, p) => {
     const m = p.folio?.match(/NNR-(\d+)/);
     const n = m ? parseInt(m[1], 10) : 0;
     return n > max ? n : max;
   }, 0);
-
-  if (isFirestoreReadBlocked() || isFirestoreWriteBlocked()) {
-    const next = Math.max(local.nextFolioNumber || 0, maxLocalNumber) + 1;
-    local.nextFolioNumber = next + 1;
-    saveLocalDB(local);
-    return next;
-  }
-
-  try {
+  return runTransaction(db, async tx => {
     const counterRef = doc(db, 'counters', 'folios');
-    const snap = await getDoc(counterRef);
-    let current = snap.exists() ? (snap.data().value || 1) : maxLocalNumber + 1;
-    if (current <= maxLocalNumber) {
-      current = maxLocalNumber + 1;
-    }
-    await setDoc(counterRef, { value: current + 1 }, { merge: true });
-    local.nextFolioNumber = current + 1;
-    saveLocalDB(local);
-    return current;
-  } catch (err: any) {
-    recordFirestoreError(err, 'write');
-    logDbResilienceInfo('getNextFolioNumber falling back to local counter', err);
-    const next = Math.max(local.nextFolioNumber || 0, maxLocalNumber) + 1;
-    local.nextFolioNumber = next + 1;
-    saveLocalDB(local);
+    const snap = await tx.get(counterRef);
+    const next = Math.max(Number(snap.data()?.value) || 1, maxExistingNumber + 1);
+    tx.set(counterRef, { value: next + 1 }, { merge: true });
     return next;
-  }
+  });
 }
 
 async function getNextOrderNumber(): Promise<number> {
-  const local = getLocalDB();
-  const maxLocalOrder = local.orders.reduce((max, o) => {
+  const orders = await getOrders();
+  const maxExistingOrder = orders.reduce((max, o) => {
     const m = o.orderNumber?.match(/ORD-(\d+)/);
     const n = m ? parseInt(m[1], 10) : 0;
     return n > max ? n : max;
   }, 1000);
-
-  if (isFirestoreReadBlocked() || isFirestoreWriteBlocked()) {
-    return maxLocalOrder + 1;
-  }
-
-  try {
+  return runTransaction(db, async tx => {
     const counterRef = doc(db, 'counters', 'orders');
-    const snap = await getDoc(counterRef);
-    let current = snap.exists() ? (snap.data().value || 1001) : maxLocalOrder + 1;
-    if (current <= maxLocalOrder) {
-      current = maxLocalOrder + 1;
-    }
-    await setDoc(counterRef, { value: current + 1 }, { merge: true });
-    return current;
-  } catch (err: any) {
-    recordFirestoreError(err, 'write');
-    logDbResilienceInfo('getNextOrderNumber falling back to local counter', err);
-    return maxLocalOrder + 1;
-  }
+    const snap = await tx.get(counterRef);
+    const next = Math.max(Number(snap.data()?.value) || 1001, maxExistingOrder + 1);
+    tx.set(counterRef, { value: next + 1 }, { merge: true });
+    return next;
+  });
 }
 
 // Global variable fallback (not used for cloud persistence but matches structure)
@@ -1892,78 +1862,84 @@ export async function exportParticipantsCSV(): Promise<string> {
 }
 
 export async function deleteOrder(orderId: string, userEmail = 'admin'): Promise<boolean> {
-  await ensureSeeded();
   const orderRef = doc(db, 'orders', orderId);
   const snap = await getDoc(orderRef);
   if (!snap.exists()) return false;
   const orderData = snap.data() as Order;
-
-  // Delete all participants associated with this order
   const participantsSnap = await getDocs(query(collection(db, 'participants'), where('orderId', '==', orderId)));
-  for (const pDoc of participantsSnap.docs) {
-    await deleteDoc(pDoc.ref);
+  // Each participant deletion releases the reservation and clears its identity locks.
+  for (const participant of participantsSnap.docs) {
+    if (!await deleteParticipant(participant.id, userEmail)) throw new Error(`No se pudo eliminar el participante ${participant.id}`);
   }
-
-  // Delete the order itself
+  // Orders without associated participants still need deletion.
   await deleteDoc(orderRef);
-
-  // Keep stage sales statistics in sync for approved orders.
-  if (orderData.paymentStatus === 'approved') {
-    try {
-      const stageRef = doc(db, 'stages', orderData.stageId);
-      const stageSnap = await getDoc(stageRef);
-      if (stageSnap.exists()) {
-        const stage = stageSnap.data() as PricingStage;
-        stage.soldCount = Math.max(0, stage.soldCount - orderData.participantsCount);
-        await setDoc(stageRef, stage);
-      }
-    } catch (e) {
-      console.error('Error adjusting metrics on order deletion:', e);
-    }
-  }
-
-  invalidateParticipantsCache();
+  invalidateOrdersCache();
   try {
-    await syncActiveRegistrationCount();
-  } catch (err: any) {
-    recordFirestoreError(err, 'write');
-    logDbResilienceInfo('Registration counter sync after order deletion deferred', err);
+    await recordAuditLog('ORDER_DELETED', 'order', orderId, userEmail, 'admin', `Orden ${orderData.orderNumber} por ${orderData.customerName} eliminada por completo`);
+  } catch (err) {
+    console.error('Order deleted, audit log unavailable:', err);
   }
-
-  await recordAuditLog('ORDER_DELETED', 'order', orderId, userEmail, 'admin', `Orden ${orderData.orderNumber} por ${orderData.customerName} eliminada por completo (incluyendo sus participantes)`);
   return true;
 }
 
 export async function deleteParticipant(participantId: string, userEmail = 'admin'): Promise<boolean> {
+  const original = await getParticipantByFolioOrQr(participantId);
+  if (!original) return false;
+  const normalize = (value: string) => value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+  const hash = (value: string) => createHash('sha256').update(normalize(value)).digest('hex');
+  const originalOrder = await getOrder(original.orderId);
+  const stageRef = originalOrder?.stageId ? doc(db, 'stages', originalOrder.stageId) : null;
+  const participantRef = doc(db, 'participants', original.id);
+  const orderRef = doc(db, 'orders', original.orderId);
+  const configRef = doc(db, 'config', 'nnr-paraiso-2026');
+  const capacityRef = doc(db, 'last_spots_capacity', '2026-11-07');
+  const emailRef = doc(db, 'last_spots_locks', `email-${hash(original.email)}`);
+  const nameRef = doc(db, 'last_spots_locks', `name-${hash(original.fullName)}`);
+  const requestRef = original.lastSpotsRequestKey ? doc(db, 'last_spots_requests', original.lastSpotsRequestKey) : null;
+  const deleted = await runTransaction(db, async tx => {
+    const [participantSnap, orderSnap, configSnap, capacitySnap, emailSnap, nameSnap, requestSnap, stageSnap] = await Promise.all([
+      tx.get(participantRef), tx.get(orderRef), tx.get(configRef), tx.get(capacityRef), tx.get(emailRef), tx.get(nameRef),
+      requestRef ? tx.get(requestRef) : Promise.resolve(null),
+      stageRef ? tx.get(stageRef) : Promise.resolve(null),
+    ]);
+    if (!participantSnap.exists()) return false;
+    const current = participantSnap.data() as Participant;
+    tx.delete(participantRef);
+    if (orderSnap.exists()) {
+      const order = orderSnap.data() as Order;
+      if (order.participantsCount <= 1) tx.delete(orderRef);
+      else tx.update(orderRef, {
+        participantsCount: order.participantsCount - 1,
+        subtotal: Math.max(0, order.subtotal - current.unitPrice),
+        totalAmount: Math.max(0, order.totalAmount - current.unitPrice + current.discountApplied),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+    if (orderSnap.exists() && orderSnap.data()?.paymentStatus === 'approved' && stageRef && stageSnap?.exists()) {
+      tx.set(stageRef, { soldCount: Math.max(0, (Number(stageSnap.data()?.soldCount) || 0) - 1) }, { merge: true });
+    }
+    if (emailSnap.exists() && emailSnap.data()?.participantId === current.id) tx.delete(emailRef);
+    if (nameSnap.exists() && nameSnap.data()?.participantId === current.id) tx.delete(nameRef);
+    if (requestRef && requestSnap?.exists()) tx.set(requestRef, { deleted: true }, { merge: true });
+    if (current.status !== 'cancelled') {
+      if (configSnap.exists()) tx.set(configRef, { currentTotalRegistered: Math.max(0, (Number(configSnap.data()?.currentTotalRegistered) || 0) - 1) }, { merge: true });
+      if (current.lastSpotsRequestKey && capacitySnap.exists()) tx.set(capacityRef, { occupied: Math.max(0, (Number(capacitySnap.data()?.occupied) || 0) - 1) }, { merge: true });
+    }
+    return true;
+  });
+  if (!deleted) return false;
   const local = getLocalDB();
-  const idx = local.participants.findIndex(p => p.id === participantId || p.folio === participantId);
-  if (idx === -1) return false;
-  const original = local.participants.splice(idx, 1)[0];
+  local.participants = local.participants.filter(p => p.id !== original.id);
+  local.orders = local.orders.filter(o => o.id !== original.orderId || o.participantsCount > 1);
   saveLocalDB(local);
-  if (cachedParticipants) {
-    cachedParticipants.data = local.participants;
+  invalidateParticipantsCache();
+  invalidateOrdersCache();
+  invalidateConfigCache();
+  try {
+    await recordAuditLog('PARTICIPANT_DELETED', 'participant', original.id, userEmail, 'admin', `Participante ${original.fullName} (Folio: ${original.folio}) eliminado`);
+  } catch (err) {
+    console.error('Participant deleted, audit log unavailable:', err);
   }
-
-  // Non-blocking background Firestore sync so HTTP response is instant
-  if (!isFirestoreWriteBlocked()) {
-    (async () => {
-      try {
-        await deleteDoc(doc(db, 'participants', original.id));
-        recordDbOp('DELETE', `participants/${original.id}`, 1);
-      } catch (err: any) {
-        recordFirestoreError(err, 'write');
-        console.warn('[DB Resilience] Firestore delete deferred, participant removed from local storage:', err?.message || err);
-      }
-
-      try {
-        await syncActiveRegistrationCount();
-      } catch (e) {
-        console.error('Error reconciling registration count after participant deletion:', e);
-      }
-    })();
-  }
-
-  await recordAuditLog('PARTICIPANT_DELETED', 'participant', original.id, userEmail, 'admin', `Participante ${original.fullName} (Folio: ${original.folio}) eliminado`);
   return true;
 }
 
