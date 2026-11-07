@@ -34,6 +34,7 @@ import { Participant, ShirtSize } from '@/lib/types';
 
 export default function AdminParticipantesPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [maxTotalQuota, setMaxTotalQuota] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -90,7 +91,16 @@ export default function AdminParticipantesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/participants');
+      const [res, configRes] = await Promise.all([
+        fetch('/api/participants'),
+        fetch('/api/event/config').catch(() => null),
+      ]);
+      if (configRes?.ok) {
+        const configData = await configRes.json();
+        setMaxTotalQuota(typeof configData.data?.maxTotalQuota === 'number' ? configData.data.maxTotalQuota : null);
+      } else {
+        setMaxTotalQuota(null);
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.data) {
@@ -524,7 +534,7 @@ export default function AdminParticipantesPage() {
             Base de Datos Oficial
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-            PARTICIPANTES ({participants.length})
+            PARTICIPANTES ({participants.length} registros)
           </h1>
           <p className="text-xs sm:text-sm text-slate-400">
             Control de folios, tallas de playeras, estatus y exportación para cronometraje.
@@ -585,10 +595,10 @@ export default function AdminParticipantesPage() {
             <Users className="w-4 h-4 text-cyan-400" />
           </div>
           <div className="text-2xl font-black text-white mt-1">
-            {participants.filter(p => p.status !== 'cancelled').length} <span className="text-xs font-normal text-slate-500">/ 350 cupo</span>
+            {participants.filter(p => p.status !== 'cancelled').length} <span className="text-xs font-normal text-slate-500">/ {maxTotalQuota ?? '—'} cupo</span>
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
-            {participants.filter(p => p.status === 'confirmed').length} confirmados • {participants.filter(p => p.status === 'pending').length} pendientes ({participants.length} en base de datos)
+            {participants.filter(p => p.status === 'confirmed').length} confirmados + {participants.filter(p => p.status === 'pending').length} pendientes = {participants.filter(p => p.status !== 'cancelled').length} activos; {participants.filter(p => p.status === 'cancelled').length} cancelados/liberados = {participants.length} registros en total
           </div>
         </div>
 
@@ -611,7 +621,7 @@ export default function AdminParticipantesPage() {
             </span>
           </div>
           <div className="text-2xl font-black text-cyan-300 mt-1">
-            {participants.filter(p => p.modality !== 'Recreativa' && !p.category?.toLowerCase().includes('recreativ')).length}
+            {participants.filter(p => p.status !== 'cancelled' && p.modality !== 'Recreativa' && !p.category?.toLowerCase().includes('recreativ')).length}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
             Incluye kit completo, dorsal con número
@@ -637,7 +647,7 @@ export default function AdminParticipantesPage() {
             </span>
           </div>
           <div className="text-2xl font-black text-fuchsia-300 mt-1">
-            {participants.filter(p => p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ')).length}
+            {participants.filter(p => p.status !== 'cancelled' && (p.modality === 'Recreativa' || p.category?.toLowerCase().includes('recreativ'))).length}
           </div>
           <div className="text-[10px] text-slate-400 mt-0.5">
             ⚠️ <strong className="text-fuchsia-300">NO incluye kit</strong> (solo playera y medalla)

@@ -257,7 +257,7 @@ export default function AdminDashboardPage() {
                 </span>
               </div>
               <p className="text-xs text-rose-200/80 mt-0.5">
-                Puedes revisar sus datos y agregarlos al apartado de &ldquo;No Pagados&rdquo; para liberar sus lugares del cupo de 350. Sus datos se mantendrán guardados para invitarlos a futuras carreras.
+                Puedes revisar sus datos y agregarlos al apartado de &ldquo;No Pagados&rdquo; para liberar sus lugares del cupo de {stats.totalQuota}. Sus datos se mantendrán guardados para invitarlos a futuras carreras.
               </p>
             </div>
           </div>

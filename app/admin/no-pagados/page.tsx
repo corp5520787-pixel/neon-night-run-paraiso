@@ -34,6 +34,7 @@ interface OverdueParticipant extends Participant {
 
 export default function NoPagadosPage() {
   const [items, setItems] = useState<OverdueParticipant[]>([]);
+  const [maxTotalQuota, setMaxTotalQuota] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'retained' | 'released'>('all');
@@ -58,6 +59,13 @@ export default function NoPagadosPage() {
     setLoading(true);
     setCurrentTime(Date.now());
     try {
+      const configRes = await fetch('/api/event/config').catch(() => null);
+      if (configRes?.ok) {
+        const configData = await configRes.json();
+        setMaxTotalQuota(typeof configData.data?.maxTotalQuota === 'number' ? configData.data.maxTotalQuota : null);
+      } else {
+        setMaxTotalQuota(null);
+      }
       // 1. Fetch both audit of overdue pending & cancelled participants
       const resAudit = await fetch('/api/admin/audit-overdue');
       const dataAudit = await resAudit.json();
@@ -249,7 +257,7 @@ export default function NoPagadosPage() {
       if (res.ok && data.success) {
         setActionMessage({
           type: 'success',
-          text: `¡Lugar liberado con éxito! El folio ${participant.folio} de ${participant.fullName} se movió a lugares liberados del cupo de 350. Sus datos se conservan en la base de datos.`,
+          text: `¡Lugar liberado con éxito! El folio ${participant.folio} de ${participant.fullName} se movió a lugares liberados. Sus datos se conservan en la base de datos.`,
         });
         setReleaseModalData(null);
         loadData();
@@ -403,7 +411,7 @@ export default function NoPagadosPage() {
           </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-3xl">
             Personas con más de 5 días sin pagar. Aquí puedes enviarles recordatorios periódicos cada 24 horas y{' '}
-            <strong className="text-rose-300">liberar su lugar manualmente</strong> cuando lo decidas para que otro corredor tome el cupo de 350. Sus datos quedan guardados para futuras carreras.
+            <strong className="text-rose-300">liberar su lugar manualmente</strong> cuando lo decidas para que otro corredor tome ese lugar. Sus datos quedan guardados para futuras carreras.
           </p>
         </div>
 
@@ -510,13 +518,13 @@ export default function NoPagadosPage() {
         <div className="p-4 rounded-2xl bg-[#0b1120] border border-emerald-500/20 flex items-center justify-between">
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
-              Lugares Ya Liberados
+              Registros Cancelados
             </span>
             <div className="text-2xl sm:text-3xl font-black text-emerald-400 mt-1">
               {releasedCount}
             </div>
             <span className="text-[10px] text-emerald-400/70">
-              Disponibles en el cupo de 350 corredores
+              Ya no ocupan lugar; el cupo total es {maxTotalQuota ?? '—'} corredores
             </span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
@@ -819,7 +827,7 @@ export default function NoPagadosPage() {
                           <button
                             onClick={() => openReleaseModal(item)}
                             className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-black inline-flex items-center gap-1.5 transition-all shadow-md shadow-rose-950/40 hover:scale-[1.02] active:scale-95"
-                            title="Liberar manualmente el lugar de este corredor para el cupo de 350"
+                            title="Liberar manualmente el lugar de este corredor"
                           >
                             <UserX className="w-3.5 h-3.5" />
                             <span>Liberar Lugar</span>
@@ -858,7 +866,7 @@ export default function NoPagadosPage() {
                     Liberar Lugar Manualmente
                   </h3>
                   <p className="text-xs text-rose-300">
-                    Neon Night Run Paraíso 2026 · Cupo 350
+                    Neon Night Run Paraíso 2026 · Cupo {maxTotalQuota ?? '—'}
                   </p>
                 </div>
               </div>
@@ -904,7 +912,7 @@ export default function NoPagadosPage() {
               <div className="p-3.5 bg-rose-950/40 border border-rose-500/30 rounded-2xl text-xs text-rose-200/90 leading-relaxed">
                 ⚡ <strong>Efectos de esta acción manual:</strong>
                 <ul className="list-disc list-inside mt-1.5 space-y-1 text-slate-300 text-[11px]">
-                  <li>El cupo de 350 corredores se liberará para permitir que otra persona se inscriba.</li>
+                  <li>El lugar de este corredor se liberará para permitir que otra persona se inscriba.</li>
                   <li>Los datos del corredor (correo, teléfono y nombre) se conservarán intactos en la base de datos para invitaciones a futuras carreras.</li>
                 </ul>
               </div>
