@@ -1455,84 +1455,77 @@ export async function markKitDelivered(
   participantId: string,
   staffUser: { email: string; name: string },
   notes?: string
-): Promise<{ success: boolean; message: string; participant?: Participant }> {
-  await ensureSeeded();
-  const p = await getParticipantByFolioOrQr(participantId);
-  
-  if (!p) {
-    return { success: false, message: 'Participante no encontrado.' };
-  }
+): Promise<{ success: boolean; message: string; participant?: Participant; alreadyDelivered?: boolean }> {
+  const found = await getParticipantByFolioOrQr(participantId);
+  if (!found) return { success: false, message: 'Participante no encontrado.' };
 
-  // Auto-confirm participant status if staff delivers kit in person
-  if (p.status !== 'confirmed') {
-    p.status = 'confirmed';
-  }
-
-  const now = new Date().toISOString();
-  p.kitDelivered = true;
-  p.kitDeliveredAt = now;
-  p.kitDeliveredBy = staffUser.email || staffUser.name;
-  p.kitDeliveryNotes = notes || 'Entrega completada';
-
-  // Instant local storage update
-  try {
-    const local = getLocalDB();
-    const idx = local.participants.findIndex(item => item.id === p.id || item.folio === p.folio);
-    if (idx !== -1) {
-      local.participants[idx] = { ...local.participants[idx], ...p };
-      saveLocalDB(local);
+  const participantRef = doc(db, 'participants', found.id);
+  const result = await runTransaction(db, async tx => {
+    const snap = await tx.get(participantRef);
+    if (!snap.exists()) return { success: false, message: 'Participante no encontrado.' };
+    const current = snap.data() as Participant;
+    if (current.kitDelivered) {
+      return { success: true, alreadyDelivered: true, participant: current,
+        message: `El kit de ${current.fullName} ya había sido entregado.` };
     }
-  } catch (e) {}
-
-  if (cachedParticipants) {
-    const cIdx = cachedParticipants.data.findIndex(item => item.id === p.id || item.folio === p.folio);
-    if (cIdx !== -1) {
-      cachedParticipants.data[cIdx] = { ...cachedParticipants.data[cIdx], ...p };
+    if (current.status !== 'confirmed') {
+      return { success: false, participant: current,
+        message: 'Solo corredores con inscripción confirmada pueden recoger su kit.' };
     }
-  }
-
-  // Non-blocking Firestore sync
-  if (!isFirestoreWriteBlocked()) {
-    setDoc(doc(db, 'participants', p.id), p, { merge: true }).catch(err => {
-      recordFirestoreError(err, 'write');
-      logDbResilienceInfo('Kit delivery update stored locally, Firestore sync deferred', err);
+    const now = new Date().toISOString();
+    const updated: Participant = {
+      ...current,
+      kitDelivered: true,
+      kitDeliveredAt: now,
+      kitDeliveredBy: staffUser.email || staffUser.name,
+      kitDeliveryNotes: notes || 'Entrega completada',
+    };
+    tx.update(participantRef, {
+      kitDelivered: true,
+      kitDeliveredAt: now,
+      kitDeliveredBy: updated.kitDeliveredBy,
+      kitDeliveryNotes: updated.kitDeliveryNotes,
     });
+    return { success: true, alreadyDelivered: false, participant: updated,
+      message: `¡Kit entregado exitosamente a ${updated.fullName} (Folio: ${updated.folio}, Talla: ${updated.shirtSize})!` };
+  });
+
+  if (!result.success || result.alreadyDelivered || !result.participant) return result;
+  invalidateParticipantsCache();
+  const local = getLocalDB();
+  const idx = local.participants.findIndex(item => item.id === result.participant!.id);
+  if (idx !== -1) {
+    local.participants[idx] = result.participant;
+    saveLocalDB(local);
   }
 
   const log: KitDeliveryLog = {
-    id: `klog-${Date.now()}`,
-    participantId: p.id,
-    folio: p.folio,
-    participantName: p.fullName,
-    shirtSize: p.shirtSize,
+    id: `klog-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    participantId: result.participant.id,
+    folio: result.participant.folio,
+    participantName: result.participant.fullName,
+    shirtSize: result.participant.shirtSize,
     staffEmail: staffUser.email,
     staffName: staffUser.name,
     action: 'delivered',
-    notes,
-    timestamp: now,
+    ...(notes ? { notes } : {}),
+    timestamp: result.participant.kitDeliveredAt!,
   };
-
   try {
-    const local = getLocalDB();
-    if (!local.kitLogs) local.kitLogs = [];
-    local.kitLogs.unshift(log);
-    saveLocalDB(local);
-  } catch (e) {}
-
-  if (!isFirestoreWriteBlocked()) {
-    setDoc(doc(db, 'kit_logs', log.id), log, { merge: true }).catch(err => {
-      recordFirestoreError(err, 'write');
-      logDbResilienceInfo('Kit log write deferred', err);
-    });
+    const localLogs = getLocalDB();
+    localLogs.kitLogs.unshift(log);
+    saveLocalDB(localLogs);
+    await setDoc(doc(db, 'kit_logs', log.id), log);
+  } catch (err) {
+    console.error('Kit delivered; log could not be saved:', err);
   }
-
-  await recordAuditLog('KIT_DELIVERED', 'kit_delivery', p.id, staffUser.email, 'staff', `Kit entregado para folio ${p.folio} (${p.fullName}, Talla ${p.shirtSize})`);
-
-  return {
-    success: true,
-    message: `¡Kit entregado exitosamente a ${p.fullName} (Folio: ${p.folio}, Talla: ${p.shirtSize})!`,
-    participant: p,
-  };
+  try {
+    await recordAuditLog('KIT_DELIVERED', 'kit_delivery', result.participant.id, staffUser.email, 'staff',
+      `Kit entregado para folio ${result.participant.folio} (${result.participant.fullName}, Talla ${result.participant.shirtSize})`);
+  } catch (err) {
+    console.error('Kit delivered; audit log could not be saved:', err);
+  }
+  return result;
 }
 
 export async function revertKitDelivered(

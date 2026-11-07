@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await markKitDelivered(participantId, staffUser, notes);
-    return NextResponse.json(result);
+    return NextResponse.json(result, { status: result.success ? 200 : 400 });
   } catch (error) {
     console.error('Error delivering kit:', error);
     return NextResponse.json({ success: false, message: 'Error al registrar entrega de kit' }, { status: 500 });

@@ -28,6 +28,7 @@ export default function AdminEntregaKitsPage() {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'warning'; text: string } | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [deliveredCountToday, setDeliveredCountToday] = useState(0);
+  const [deliverySuccess, setDeliverySuccess] = useState<Participant | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -38,6 +39,7 @@ export default function AdminEntregaKitsPage() {
     setStatusMessage(null);
     setScannedParticipant(null);
     setAlreadyDelivered(false);
+    setDeliverySuccess(null);
 
     try {
       const res = await fetch('/api/participants/verify-qr', {
@@ -92,18 +94,21 @@ export default function AdminEntregaKitsPage() {
         }),
       });
       const data = await res.json();
-      if (data.success && data.participant) {
+      if (res.ok && data.success && data.participant) {
         setScannedParticipant(data.participant);
         setAlreadyDelivered(true);
-        setDeliveredCountToday(prev => prev + 1);
+        if (!data.alreadyDelivered) {
+          setDeliverySuccess(data.participant);
+          setDeliveredCountToday(prev => prev + 1);
+        }
         setStatusMessage({
           type: 'success',
-          text: `🎉 ¡KIT ENTREGADO EXITOSAMENTE a ${data.participant.fullName}!`,
+          text: data.alreadyDelivered ? `Este kit ya había sido entregado a ${data.participant.fullName}.` : `🎉 ¡KIT ENTREGADO EXITOSAMENTE a ${data.participant.fullName}!`,
         });
       } else {
         setStatusMessage({
           type: 'error',
-          text: data.error || 'No se pudo registrar la entrega',
+          text: data.message || data.error || 'No se pudo registrar la entrega',
         });
       }
     } catch {
@@ -122,6 +127,7 @@ export default function AdminEntregaKitsPage() {
     setScannedParticipant(null);
     setAlreadyDelivered(false);
     setStatusMessage(null);
+    setDeliverySuccess(null);
   };
 
   // Camera handling (WebRTC)
@@ -162,6 +168,18 @@ export default function AdminEntregaKitsPage() {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
+      {deliverySuccess && (
+        <div role="dialog" aria-modal="true" aria-labelledby="kit-success-title" className="fixed inset-0 z-[100] bg-[#06131a]/95 flex items-center justify-center p-5">
+          <div className="w-full max-w-2xl rounded-3xl border-2 border-emerald-400 bg-gradient-to-b from-emerald-950 to-[#07111c] p-8 sm:p-12 text-center shadow-[0_0_80px_rgba(52,211,153,0.35)]">
+            <CheckCircle2 className="mx-auto h-20 w-20 text-emerald-400 mb-5" />
+            <h2 id="kit-success-title" className="text-4xl sm:text-6xl font-black text-white uppercase">¡KIT ENTREGADO!</h2>
+            <p className="mt-5 text-xl font-bold text-emerald-200">{deliverySuccess.fullName}</p>
+            <p className="mt-2 text-base font-mono text-cyan-300">{deliverySuccess.folio} · Talla {deliverySuccess.shirtSize}</p>
+            <p className="mt-5 text-sm text-slate-300">Entrega guardada correctamente en la base de datos.</p>
+            <button autoFocus onClick={handleScanNext} className="mt-8 w-full sm:w-auto rounded-2xl bg-emerald-400 px-9 py-4 font-black text-slate-950 hover:bg-emerald-300">Escanear siguiente corredor</button>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-2">
