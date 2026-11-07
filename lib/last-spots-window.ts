@@ -1,6 +1,6 @@
-// Shareable, unlisted link. Possession of this link grants access until 7 p.m. CDMX.
+// The public path stays short; this value only tags requests for the special window.
 export const LAST_SPOTS_ACCESS = 'a23352017848e58a0199a6887854ec1d';
-export const LAST_SPOTS_PATH = `/ultimos-cupos/${LAST_SPOTS_ACCESS}`;
+export const LAST_SPOTS_PATH = '/ultimos-cupos';
 export const LAST_SPOTS_OPENS = '2026-11-07T00:00:00-06:00';
 export const LAST_SPOTS_CLOSES = '2026-11-07T19:00:00-06:00';
 
