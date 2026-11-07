@@ -1608,34 +1608,32 @@ export async function revertKitDelivered(
 }
 
 export async function updateParticipant(id: string, updates: Partial<Participant>, userEmail = 'admin'): Promise<Participant | null> {
+  const original = await getParticipantByFolioOrQr(id);
+  if (!original) return null;
+  const participantRef = doc(db, 'participants', original.id);
+  const updated = await runTransaction(db, async tx => {
+    const snap = await tx.get(participantRef);
+    if (!snap.exists()) return null;
+    const changes = cleanUndefined(updates);
+    tx.update(participantRef, changes);
+    return { ...(snap.data() as Participant), ...changes } as Participant;
+  });
+  if (!updated) return null;
+  invalidateParticipantsCache();
   const local = getLocalDB();
-  const idx = local.participants.findIndex(p => p.id === id || p.folio === id);
-  let updated: Participant | null = null;
-  
+  const idx = local.participants.findIndex(p => p.id === updated.id);
   if (idx !== -1) {
-    local.participants[idx] = { ...local.participants[idx], ...updates };
-    updated = local.participants[idx];
+    local.participants[idx] = updated;
     saveLocalDB(local);
-    if (cachedParticipants) {
-      cachedParticipants.data = local.participants;
-    }
   }
-
-  // Directly update Firestore document by ID without collection scan
+  if (updates.status !== undefined) {
+    try { await syncActiveRegistrationCount(); }
+    catch (err) { console.error('Participant updated; count sync deferred:', err); }
+  }
   try {
-    const docId = updated?.id || id;
-    await setDoc(doc(db, 'participants', docId), updates, { merge: true });
-    recordDbOp('WRITE', `participants/${docId}`, 1);
-    if (updates.status !== undefined) {
-      invalidateParticipantsCache();
-      await syncActiveRegistrationCount();
-    }
-  } catch (err: any) {
-    logDbResilienceInfo('Participant update stored locally, Firestore sync deferred', err);
-  }
-
-  if (updated) {
     await recordAuditLog('PARTICIPANT_UPDATED', 'participant', updated.id, userEmail, 'admin', `Datos de participante ${updated.fullName} actualizados`);
+  } catch (err) {
+    console.error('Participant updated; audit log unavailable:', err);
   }
   return updated;
 }
